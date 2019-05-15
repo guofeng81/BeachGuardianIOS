@@ -1,0 +1,63 @@
+//
+//  ChatChannelTests.swift
+//  BeachGuardianTests
+//
+//  Created by Feng Guo on 3/20/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+import XCTest
+@testable import BeachGuardian
+
+class ChatChannelTests: XCTestCase {
+
+    var channelsVC: ChannelsViewController?
+    
+    override func setUp() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        channelsVC = (storyboard.instantiateViewController(withIdentifier: "ChannelsView") as! ChannelsViewController)
+        _ = channelsVC!.view
+    }
+
+    override func tearDown() {
+        channelsVC = nil
+    }
+
+    func test_tableview_is_not_null(){
+        XCTAssertTrue((channelsVC?.isViewLoaded)!)
+    }
+    
+    func test_table_view_channels(){
+        XCTAssertEqual(channelsVC!.channels.count, 2)
+    }
+    
+    func test_table_view_rows(){
+        XCTAssertEqual(channelsVC!.channelsTableView.numberOfRows(inSection: 0), 2)
+    }
+    
+    func test_table_view_sections(){
+        XCTAssertEqual(channelsVC!.channelsTableView.numberOfSections,1)
+    }
+    
+    func test_table_view_cells(){
+        
+        let channelTableView = channelsVC?.channelsTableView
+        let datasource = channelsVC?.channelsTableView.dataSource
+        let firstOpenChannelCells = datasource?.tableView(channelTableView!, cellForRowAt: IndexPath(row: 0, section: 0)) as! OpenChannelTableViewCell
+         let secondOpenChannelCells = datasource?.tableView(channelTableView!, cellForRowAt: IndexPath(row: 1, section: 0)) as! OpenChannelTableViewCell
+        
+        XCTAssertEqual(firstOpenChannelCells.channelName.text,"Open Channels")
+        XCTAssertEqual(secondOpenChannelCells.channelName.text,"Group Channels")
+        
+    }
+    
+    func testSegue() {
+        
+        UIApplication.shared.keyWindow?.rootViewController = channelsVC
+        let table = channelsVC?.channelsTableView
+        
+        channelsVC?.tableView(table!, didSelectRowAt: [0,0])
+        XCTAssertTrue(channelsVC?.presentedViewController is OpenChannelViewController)
+    }
+
+}

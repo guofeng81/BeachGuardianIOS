@@ -1,0 +1,49 @@
+import XCTest
+@testable import BeachGuardian
+import AWSCognitoIdentityProvider
+
+class UserSessionTests: XCTestCase {
+    
+    var UserSession: BeachGuardian.UserSession!
+
+    override func setUp() {
+        self.UserSession = BeachGuardian.UserSession()
+
+    }
+    
+    func testI_getUserDetails_getsUser(){
+        
+        class ResponseMock: AWSCognitoIdentityUserGetDetailsResponse {
+            override var userAttributes: [AWSCognitoIdentityProviderAttributeType]? { set {
+            
+                } get {
+                    var attr: [AWSCognitoIdentityProviderAttributeType] = []
+                    
+                    let email = AWSCognitoIdentityProviderAttributeType()
+                    let role = AWSCognitoIdentityProviderAttributeType()
+                    
+                    email!.name = "email"
+                    email!.value = "beach@wcff.com"
+                    
+                    role!.name = "custom:roleID"
+                    role!.value = "1"
+                    
+                    attr.append(email!)
+                    attr.append(role!)
+                    return attr
+                }
+            }
+        }
+        
+        let task = ResponseMock()
+        
+        let mock = AsyncMock()
+        self.UserSession.dispatcher = mock
+        self.UserSession.extractDetails(result: task!)
+        
+        mock.container()
+        XCTAssertEqual(self.UserSession.session.identity, "beach@wcff.com")
+        
+    }
+
+}

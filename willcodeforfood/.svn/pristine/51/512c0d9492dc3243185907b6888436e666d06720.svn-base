@@ -1,0 +1,207 @@
+//
+//  PoliceChatViewController.swift
+//  BeachGuardian
+//
+//  Created by Feng Guo on 3/19/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+import UIKit
+import TwilioChatClient
+
+
+
+class PoliceChatViewController: UIViewController {
+
+    let tokenURL = "https://crimson-mastiff-6542.twil.io/chat-token"
+    let identity = "Leo"
+    var channelName = ""
+    // MARK: Chat variables
+    var client: TwilioChatClient? = nil
+    var generalChannel: TCHChannel? = nil
+    var messages: [TCHMessage] = []
+    
+    @IBOutlet var chatView: UIView!
+    @IBOutlet var heightConstraint: NSLayoutConstraint!
+    @IBOutlet var tableView: UITableView!
+    @IBOutlet var messageTextField: UITextField!
+    
+    @IBAction func sendButton(_ sender: UIButton) {
+        if let messages = self.generalChannel?.messages {
+            let messageOptions = TCHMessageOptions().withBody(messageTextField.text!)
+            messages.sendMessage(with: messageOptions, completion: { (result, message) in
+                self.messageTextField.text = ""
+                self.messageTextField.resignFirstResponder()
+            })
+        }
+        
+    }
+    
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        messageTextField.delegate = self
+        login()
+        addViewTapGesture()
+        
+        tableView.register(UINib(nibName: "ChatMessageCell", bundle: nil), forCellReuseIdentifier: "chatCell")
+        
+
+    }
+    
+    func login() {
+        // Fetch Access Token from the server and initialize Chat Client - this assumes you are running
+        // the PHP starter app on your local machine, as instructed in the quick start guide
+        let deviceId = UIDevice.current.identifierForVendor!.uuidString
+        let urlString = "\(tokenURL)?identity=\(identity)&device=\(deviceId)"
+        
+        
+        let config = URLSessionConfiguration.default
+        let session = URLSession(configuration: config)
+        
+        TokenUtils.retriveTokens(url: urlString, session: session) { (token, identity, error) in
+            if let token = token {
+                // Set up Twilio Chat client
+                
+                TwilioChatClient.chatClient(withToken: token, properties: nil, delegate: self) {
+                    (result, chatClient) in
+                    self.client = chatClient;
+                    // Update UI on main thread
+                    DispatchQueue.main.async() {
+                        self.navigationItem.prompt = "Logged in as \"\(self.identity)\""
+                    }
+                }
+            } else {
+                print("Error retrieving token: \(error.debugDescription)")
+            }
+            
+        }
+    }
+    
+    func configureTableView(){
+        tableView.rowHeight = UITableView.automaticDimension
+        tableView.estimatedRowHeight = 120
+        tableView.separatorStyle = .none
+    }
+    
+    func addViewTapGesture(){
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector (viewTapped))
+        chatView.addGestureRecognizer(tapGesture)
+    }
+    
+    @objc func viewTapped(){
+        messageTextField.endEditing(true)
+    }
+    
+    
+    func loadMessages() {
+        //messages.removeAll()
+        if generalChannel!.synchronizationStatus == .all {
+            generalChannel!.messages?.getLastWithCount(100) { (result, messages) in
+                for message in messages! {
+                    self.messages.append(message)
+                    print("message appended")
+                    self.tableView.reloadData()
+                    self.configureTableView()
+                }
+            }
+        }
+    }
+    
+    
+    func scrollToBottomMessage() {
+        if self.messages.count == 0 {
+            return
+        }
+        let bottomMessageIndex = IndexPath(row: messages.count - 1, section: 0)
+        tableView.scrollToRow(at: bottomMessageIndex, at: .bottom, animated: true)
+    }
+
+
+}
+
+extension PoliceChatViewController: UITextFieldDelegate {
+    
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        UIView.animate(withDuration: 0.4) {
+            self.heightConstraint.constant = 3
+            self.view.layoutIfNeeded()
+        }
+    }
+    
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        UIView.animate(withDuration: 0.4) {
+            print("text field begin editing")
+            self.heightConstraint.constant = 308
+            self.view.layoutIfNeeded()
+        }
+    }
+}
+
+
+extension PoliceChatViewController: TwilioChatClientDelegate {
+    
+    func chatClient(_ client: TwilioChatClient, channel: TCHChannel, messageAdded message: TCHMessage) {
+        self.messages.append(message)
+        self.tableView.reloadData()
+    }
+    
+    func chatClient(_ client: TwilioChatClient, synchronizationStatusUpdated status: TCHClientSynchronizationStatus) {
+        if status == .completed {
+            
+            // Join (or create) the general channel
+            //            let defaultChannel = "Private"
+            
+            print("Default Channel Name: ",channelName)
+            
+            //join the channel through the defaultChannel's name
+            if let channelsList = client.channelsList() {
+                channelsList.channel(withSidOrUniqueName: channelName, completion: { (result, channel) in
+                    if let channel = channel {
+                        self.generalChannel = channel
+                        channel.join(completion: { result in
+                            print("Channel joined with result \(result)")
+                            self.loadMessages()
+                        })
+                    } else {
+                        // Create the general channel (for public use) if it hasn't been created yet
+                        channelsList.createChannel(options: [TCHChannelOptionFriendlyName: "Public Chat Channel", TCHChannelOptionType: TCHChannelType.public.rawValue], completion: { (result, channel) -> Void in
+                            if result.isSuccessful() {
+                                self.generalChannel = channel
+                                self.generalChannel?.join(completion: { result in
+                                    self.generalChannel?.setUniqueName(self.channelName, completion: { result in
+                                        print("channel unique name set")
+                                    })
+                                })
+                            }
+                        })
+                    }
+                })
+            }
+        }
+    }
+}
+
+
+extension PoliceChatViewController : UITableViewDataSource {
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        DispatchQueue.main.async() {
+            if self.messages.count > 0 {
+                self.scrollToBottomMessage()
+            }
+        }
+        return self.messages.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "chatCell", for: indexPath) as! ChatMessageCell
+        
+        cell.messageLabel!.text = self.messages[indexPath.row].body
+        cell.authorMessage!.text = self.messages[indexPath.row].author
+        
+        return cell
+    }
+    
+    
+}

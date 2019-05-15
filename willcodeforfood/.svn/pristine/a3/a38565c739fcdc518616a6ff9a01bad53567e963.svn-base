@@ -1,0 +1,23 @@
+import AWSCognitoIdentityProvider
+import TwilioChatClient
+import Foundation
+import UIKit
+
+class MainTabController: UITabBarController, UITabBarControllerDelegate {
+    
+    var session: UserSession?
+    @IBOutlet weak var leftBarButton: UIBarButtonItem!
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        self.session = UserSession.init()
+        self.delegate = self
+    }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "drawOptionsSegue" {
+            let options = segue.destination as! PopUpViewController
+            options.user?.userDelegate = session
+        }
+    }
+}

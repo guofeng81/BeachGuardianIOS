@@ -1,0 +1,36 @@
+import XCTest
+@testable import BeachGuardian
+
+class MainTabControllerTests: XCTestCase {
+
+    var mainTabController: BeachGuardian.MainTabController!
+    var storyboard: UIStoryboard!
+    
+    override func setUp() {
+        storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let vc = storyboard.instantiateViewController(withIdentifier: "MainTabController")
+        mainTabController = vc as? BeachGuardian.MainTabController
+        mainTabController.loadViewIfNeeded()
+    }
+    
+    func test_if_mainTabController_hasBeenloadd(){
+        XCTAssertTrue(mainTabController.isViewLoaded)
+    }
+    
+    func test_if_segueTo_PopUp_passesCorrectData(){
+        let identity: String = "beach@gmail.com"
+        XCTAssertNotNil(mainTabController.session)
+        mainTabController.session?.session.identity = identity
+        
+        let vc = storyboard.instantiateViewController(withIdentifier: "PopUpID")
+        let popUpVC = vc as? BeachGuardian.PopUpViewController
+        popUpVC?.loadViewIfNeeded()
+        
+        XCTAssertNil(popUpVC?.user?.userDelegate)
+        let seg = UIStoryboardSegue(identifier: "drawOptionsSegue", source: mainTabController, destination: popUpVC!)
+        mainTabController.prepare(for: seg, sender: mainTabController.leftBarButton)
+        
+        XCTAssertNotNil(popUpVC?.user?.userDelegate)
+        XCTAssertEqual(popUpVC?.user?.userDelegate?.session.identity, identity)
+    }
+}

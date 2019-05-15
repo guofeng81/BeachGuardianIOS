@@ -1,0 +1,146 @@
+import XCTest
+@testable import BeachGuardian
+
+class NotificationsTests: XCTestCase {
+
+    var notificationsViewController: NotificationsViewController!
+    var selectedFont: UIFont!
+    var rightFontSetting: UIFont!
+    
+    override func setUp() {
+        let storyboard: UIStoryboard =  UIStoryboard(name: "Main", bundle: nil)
+        let viewController = storyboard.instantiateViewController(withIdentifier: "NotificationsViewController")
+        notificationsViewController = viewController as? NotificationsViewController
+        notificationsViewController.loadViewIfNeeded()
+    }
+    
+    func test_if_notificationsViewController_hasBeenLoaded(){
+        XCTAssertNotNil(notificationsViewController)
+    }
+    
+    func test_if_buttonSelectionChanges_font_forAllButton(){
+        notificationsViewController.filter_time_action(notificationsViewController.allButton)
+        rightFontSetting = NotificationsViewController.SelectedTime_font
+        selectedFont = notificationsViewController.allButton.titleLabel!.font
+        XCTAssertEqual(selectedFont, rightFontSetting)
+    }
+    
+    func test_if_buttonSelectionChanges_font_forFiftenMinuteButton(){
+        notificationsViewController.filter_time_action(notificationsViewController.fifteenMinuteButton)
+        rightFontSetting = NotificationsViewController.SelectedTime_font
+        selectedFont = notificationsViewController.fifteenMinuteButton.titleLabel!.font
+        XCTAssertEqual(selectedFont, rightFontSetting)
+    }
+        
+    
+    func test_if_buttonSelectionChanges_font_forThirtyMinuteButton(){
+        notificationsViewController.filter_time_action(notificationsViewController.thirtyMinuteButton)
+        rightFontSetting = NotificationsViewController.SelectedTime_font
+        selectedFont = notificationsViewController.thirtyMinuteButton.titleLabel!.font
+        XCTAssertEqual(selectedFont, rightFontSetting)
+    }
+    
+    func test_if_buttonSelectionChanges_font_forOneHourButton(){
+        notificationsViewController.filter_time_action(notificationsViewController.oneHourButton)
+        rightFontSetting = NotificationsViewController.SelectedTime_font
+        selectedFont = notificationsViewController.oneHourButton.titleLabel!.font
+        XCTAssertEqual(selectedFont, rightFontSetting)
+    }
+    
+    func test_if_buttonSelectionChanges_font_forTwoHourButton(){
+        notificationsViewController.filter_time_action(notificationsViewController.twoHourButton)
+        rightFontSetting = NotificationsViewController.SelectedTime_font
+        selectedFont = notificationsViewController.twoHourButton.titleLabel!.font
+        XCTAssertEqual(selectedFont, rightFontSetting)
+    }
+    
+    func test_if_buttonSelectionChanges_font_forFourHourPlusButton(){
+        notificationsViewController.filter_time_action(notificationsViewController.fourHourPlusButton)
+        rightFontSetting = NotificationsViewController.SelectedTime_font
+        selectedFont = notificationsViewController.fourHourPlusButton.titleLabel!.font
+        XCTAssertEqual(selectedFont, rightFontSetting)
+    }
+    
+    func test_if_buttonSelectionChanges_font_asDefault_for_selectedTimeFrame(){
+        notificationsViewController.filter_timeframe(tag: 4)
+        rightFontSetting = NotificationsViewController.DeselectedButton_font
+        selectedFont = notificationsViewController.closedButton.titleLabel!.font
+        XCTAssertEqual(rightFontSetting, selectedFont)
+    }
+    
+    func test_if_buttonSelectionChanges_font_asDefault_for_selectedTime(){
+        notificationsViewController.filter_time(tag: 10)
+        rightFontSetting = NotificationsViewController.DeselectedTime_font
+        selectedFont = notificationsViewController.allButton.titleLabel!.font
+        XCTAssertEqual(rightFontSetting, selectedFont)
+    }
+    
+    func test_if_buttonSelectionChanges_font_for_timeFrame_recent(){
+        notificationsViewController.filter_timeframe_action(notificationsViewController.recentButton)
+        rightFontSetting = NotificationsViewController.SelectedButton_font
+        selectedFont = notificationsViewController.recentButton.titleLabel!.font
+        XCTAssertEqual(selectedFont, rightFontSetting)
+    }
+    
+    
+    func test_if_buttonSelectionChanges_font_for_timeFrame_closest(){
+        notificationsViewController.filter_timeframe_action(notificationsViewController.closestButton)
+        rightFontSetting = NotificationsViewController.SelectedButton_font
+        selectedFont = notificationsViewController.closestButton.titleLabel!.font
+        XCTAssertEqual(selectedFont, rightFontSetting)
+    }
+        
+    func test_if_buttonSelectionChanges_font_for_timeFrame_closed(){
+    notificationsViewController.filter_timeframe_action(notificationsViewController.closedButton)
+        rightFontSetting = NotificationsViewController.SelectedButton_font
+        selectedFont = notificationsViewController.closedButton.titleLabel!.font
+        XCTAssertEqual(selectedFont, rightFontSetting)
+    }
+    
+    func testCellForRowAt() {
+        sleep(2)
+        _ = notificationsViewController.tableView(notificationsViewController.notificationsTable, cellForRowAt: [0,0])
+        
+        XCTAssertEqual(notificationsViewController.personArray[0].missingFirstName, "Tom")
+    }
+    
+    func test_if_PerformSegue_toMissingStatus() {
+        
+        let mock = AsyncMock()
+        notificationsViewController.dispatcher = mock
+        
+        let person: personInfo = personInfo(missingFirstName: "John", missingLastName: "Doe", missingStatus: "Not Found", clothing: "Tank Top", lastLocation: "Tower 2", hairColor: "Blonde", lastTimeSeen: "2/9/2016", ethnicity: "Caucasian", age: "15", gender: "Male", directionFromTower: "East", closestTower: "Tower 2", missingPersonPhoto: "M", locationID: "2A", missingID: "1212", contactFirstName: "Henry", contactLastName: "Beachman", contactPhone: "7132883121", secondaryPhone: "7132883122", contactID: "22", caseID: "104", status: "On going", reportedBy: "Kevin", closedBy: nil, ackCommandSt: "Command", resolvedBy: nil, lastUpdate: "2/10/2016", createdAt: "Galveston beach", completedAt: nil, locationName: "Galveston Beach", locationState: "Texas", locationCity: "Galveston", drowningNum: "2", medicalNum: "0", beachPatrolNum: "12", disturbancesNum: "0", lastTimeSeenFormatted: "2:59", lastDateSeenFormatted: "2/9/2016", lastUpdateTime: "22:52", lastUpdateDate: "2/10/2016", createdAtTime: "5:32", createdAtDate: "2/9/2016")
+        notificationsViewController.personArray.append(person)
+
+        let table = notificationsViewController.notificationsTable
+
+        table?.selectRow(at: [0, 0], animated: true, scrollPosition:         UITableView.ScrollPosition.none)
+        
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let vc = storyboard.instantiateViewController(withIdentifier: "MissingPersonReport")
+        let missingStatusTableViewController = (vc as? MissingStatusTableViewController)!
+        missingStatusTableViewController.loadViewIfNeeded()
+        
+        let seg = UIStoryboardSegue(identifier: "MissingStatusSegue", source: notificationsViewController, destination: missingStatusTableViewController)
+        
+        self.notificationsViewController?.prepare(for: seg, sender: nil)
+
+        
+        mock.container()
+        let fullname = person.missingFirstName + " " + person.missingLastName
+        XCTAssertEqual(fullname, missingStatusTableViewController.missingPersonNameLabel.text)
+    }
+    
+    func test_if_TableSelection_actually_performsSegue() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let notificationsVC = (storyboard.instantiateViewController(withIdentifier: "NotificationsViewController") as! NotificationsViewController)
+        _ = notificationsVC.view
+        
+        UIApplication.shared.keyWindow?.rootViewController = notificationsVC
+        let table = notificationsVC.notificationsTable
+        
+        notificationsVC.tableView(table!, didSelectRowAt: [0,0])
+        XCTAssertTrue(notificationsVC.presentedViewController is MissingStatusTableViewController)
+    }
+}
+

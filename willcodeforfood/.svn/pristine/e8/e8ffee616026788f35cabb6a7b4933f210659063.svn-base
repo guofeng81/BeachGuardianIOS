@@ -1,0 +1,235 @@
+//
+//  DataFromDBTest.swift
+//  BeachGuardianTests
+//
+//  Created by Vincent Poon on 3/18/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+import XCTest
+@testable import BeachGuardian
+
+class DataFromDBTests: XCTestCase
+{
+    var test : DataFromDB!
+    let session = MockURLSession()
+    let newPerson = personInfo(missingFirstName: "myFood", missingLastName: "Spring19", missingStatus: "t", clothing: "blue shirt", lastLocation: "shore", hairColor: "black", lastTimeSeen: "2019-01-30 01:00:00+00", ethnicity: "Asian", age: "2", gender: "male", directionFromTower: "east", closestTower: "1", missingPersonPhoto: "www.youtube.com", locationID: "1", missingID: "16", contactFirstName: "TestFirstName", contactLastName: "TestLastName", contactPhone: "1234567890", secondaryPhone: "987654321", contactID: "8", caseID: "16", status: "still missing", reportedBy: "11", closedBy: nil, ackCommandSt: "t", resolvedBy: nil, lastUpdate: "2019-02-09 23:14:57.74414+00", createdAt: "2019-02-09 23:14:57.74414+00", completedAt: nil, locationName: "TEST1", locationState: "Texas", locationCity: "Houston", drowningNum: "11111111", medicalNum: "22222222", beachPatrolNum: "44444444", disturbancesNum: "55555555", lastTimeSeenFormatted: "01:00 AM", lastDateSeenFormatted: "1/30/19", lastUpdateTime: "10:25 PM", lastUpdateDate: "4/09/19", createdAtTime: "10:25 PM", createdAtDate: "4/09/19")
+    
+    override func setUp()
+    {
+        super.setUp()
+        test = DataFromDB(session: session)
+
+    }
+    
+    func testGetRequestWithURL()
+    {
+        let url = "http://mockurl"
+        test.getRequest(url: url){ (data, error) in
+            
+        }
+        let urlOj = URL(string: url)
+        XCTAssert(session.lastURL == urlOj)
+    }
+    
+    func testPostRequestWithURL()
+    {
+        let url = "http://mockurl"
+        let testData = test.encodeData(info: newPerson)
+        test.postRequest(url: url, data: testData){ (data, error) in
+            
+        }
+        let urlOj = URL(string: url)
+        XCTAssert(session.lastURL == urlOj)
+    }
+    
+    
+    
+    func testGetResumeCalled()
+    {
+        let dataTask = MockURLSessionDataTask()
+        session.nextDataTask = dataTask
+        
+        let url = "http://mockurl"
+        test.getRequest(url: url){ (data, error) in
+            
+        }
+        _ = URL(string: url)
+        XCTAssert(dataTask.resumeWasCalled)
+    }
+    
+    func testPostResumeCalled()
+    {
+        let dataTask = MockURLSessionDataTask()
+        session.nextDataTask = dataTask
+        
+        let url = "http://mockurl"
+        test.postRequest(url: url, data: test.encodeData(info: newPerson)){ (data, error) in
+            
+        }
+        _ = URL(string: url)
+        XCTAssert(dataTask.resumeWasCalled)
+    }
+    
+    func testGetReturnData()
+    {
+        let expectedData = "{}".data(using: .utf8)
+        
+        session.nextData = expectedData
+        
+        var actualData: Data?
+        let url = "http://mockurl"
+        test.getRequest(url: url){ (data, error) in
+            actualData = data
+        }
+        XCTAssertNotNil(actualData)
+    }
+    
+    func testPostReturnData()
+    {
+        let expectedData = "{}".data(using: .utf8)
+        
+        session.nextData = expectedData
+        
+        var actualData: Data?
+        let url = "http://mockurl"
+        let testData = test.encodeData(info: newPerson)
+        test.postRequest(url: url, data: testData){ (data, error) in
+            actualData = data
+        }
+        XCTAssertNotNil(actualData)
+    }
+    
+    
+    
+    func testGetUrl()
+    {
+        XCTAssert(test.getGETURL(varInRoute: "hi") == "http://18.191.192.209/v2/hi")
+    }
+    
+    
+    func testConvertData()
+    {
+        var called = false
+        do
+        {
+            let jsonEncoder = JSONEncoder()
+            let jsonData = try jsonEncoder.encode([newPerson])
+            let expectation = self.expectation(description: "converting data")
+            test.convertData(data: jsonData){info in
+                for item in info{
+                    XCTAssertEqual("myFood",item.missingFirstName)
+                    XCTAssertEqual("Spring19",item.missingLastName)
+                    XCTAssertEqual("t",item.missingStatus)
+                    XCTAssertEqual("blue shirt",item.clothing)
+                    XCTAssertEqual("shore" ,item.lastLocation)
+                    XCTAssertEqual("black",item.hairColor)
+                    XCTAssertEqual("2019-01-30 01:00:00+00", item.lastTimeSeen)
+                    XCTAssertEqual("Asian", item.ethnicity)
+                    XCTAssertEqual("2",item.age)
+                    XCTAssertEqual("male",item.gender)
+                    XCTAssertEqual("east",item.directionFromTower)
+                    XCTAssertEqual("1", item.closestTower)
+                    XCTAssertEqual("www.youtube.com", item.missingPersonPhoto)
+                    XCTAssertEqual("1", item.locationID)
+                    XCTAssertEqual("16", item.missingID)
+                    
+                    XCTAssertEqual("TestFirstName", item.contactFirstName)
+                    XCTAssertEqual("TestLastName", item.contactLastName)
+                    XCTAssertEqual("1234567890", item.contactPhone)
+                    XCTAssertEqual("987654321",item.secondaryPhone)
+                    XCTAssertEqual("8",item.contactID)
+                    XCTAssertEqual("16",item.caseID)
+                    XCTAssertEqual("still missing", item.status)
+                    XCTAssertEqual(nil, item.closedBy)
+                    XCTAssertEqual("t", item.ackCommandSt)
+                    XCTAssertEqual(nil, item.resolvedBy)
+                    XCTAssertEqual("2019-02-09 23:14:57.74414+00", item.lastUpdate)
+                    XCTAssertEqual("2019-02-09 23:14:57.74414+00",item.createdAt)
+                    
+                    XCTAssertEqual(nil, item.completedAt)
+                    XCTAssertEqual("TEST1", item.locationName)
+                    XCTAssertEqual("Texas", item.locationState)
+                    XCTAssertEqual("Houston", item.locationCity)
+                    XCTAssertEqual("11111111", item.drowningNum)
+                    XCTAssertEqual("22222222", item.medicalNum)
+                    XCTAssertEqual("44444444" , item.beachPatrolNum)
+                    XCTAssertEqual("55555555", item.disturbancesNum)
+                    called = true
+                    expectation.fulfill()
+                }
+            }
+            waitForExpectations(timeout: 5, handler: nil)
+        }catch{
+            XCTAssert(false)
+        }
+        XCTAssertTrue(called)
+        
+    }
+    
+    func testGetAnConvertData()
+    {
+        var called = false
+        
+        do
+        {
+            let jsonEncoder = JSONEncoder()
+            let jsonData = try jsonEncoder.encode([newPerson])
+            session.nextData = jsonData
+            let expectation = self.expectation(description: "converting data")
+            
+            let url = "http://mockurl"
+            test.getAndConvertData(url: url){ info in
+                for item in info{
+                    XCTAssertEqual("myFood",item.missingFirstName)
+                    XCTAssertEqual("Spring19",item.missingLastName)
+                    called = true
+                    expectation.fulfill()
+                }
+            }
+        waitForExpectations(timeout: 5, handler: nil)
+        }catch{
+            XCTAssert(false)
+        }
+        XCTAssert(called)
+    }
+    
+    func testEncodeData()
+    {
+        var called = false
+        let expectation = self.expectation(description: "encoding data")
+        test.convertData(data: test.encodeData(info: newPerson)){ info in
+            for item in info
+            {
+                XCTAssert(item.missingFirstName == "myFood")
+                called = true
+                expectation.fulfill()
+            }
+            
+        }
+        waitForExpectations(timeout: 5, handler: nil)
+        XCTAssert(called)
+    }
+    
+    func testPostRequest()
+    {
+        let data = test.encodeData(info: newPerson)
+        var called = false
+        session.nextData = data
+        let url = "http://mockurl"
+        let expectation = self.expectation(description: "HTTP Post")
+        test.postRequest(url: url, data: data){(data, error) in
+            self.test.convertData(data: data){ result in
+                for item in result{
+                    XCTAssert(item.missingFirstName == "myFood")
+                    called = true
+                    expectation.fulfill()
+                    
+                }
+            }
+        }
+        waitForExpectations(timeout: 5, handler: nil)
+        XCTAssertTrue(called)
+    }
+    
+}

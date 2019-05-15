@@ -1,0 +1,136 @@
+//
+//  EBRoundedTabBarController.swift
+//  RoundedTabBarControllerExample
+//
+//  Created by Erid Bardhaj on 10/28/18.
+//  Copyright © 2018 Erid Bardhaj. All rights reserved.
+//
+
+import UIKit
+
+class EBRoundedTabBarController: UITabBarController {
+    
+    
+    // MARK: - Inner Types
+    
+    private struct Constants {
+        static let actionButtonSize = CGSize(width: 64, height: 64)
+    }
+    
+    
+    // MARK: - Properties
+    // MARK: Immutable
+    
+    private let actionButton: UIButton = {
+        let button = UIButton(type: .custom)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        
+        //button.backgroundColor = UIColor.red
+        button.setImage(UIImage(named: "camera") as UIImage?, for: .normal)
+        button.layer.cornerRadius = Constants.actionButtonSize.height/2
+        
+        button.addTarget(self, action: #selector(actionButtonTapped(sender:)), for: .touchUpInside)
+        
+        return button
+    }()
+    
+    
+    // MARK: - View lifecycle
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        setupSubviews()
+        setupConstraints()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        actionButton.isHidden = false
+    }
+    
+    
+    // MARK: - Setups
+    
+    private func setupSubviews() {
+        createTabbarControllers()
+        
+        view.addSubview(actionButton)
+    }
+    
+    private func setupConstraints() {
+        actionButton.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+        actionButton.widthAnchor.constraint(equalToConstant: Constants.actionButtonSize.width).isActive = true
+        actionButton.heightAnchor.constraint(equalToConstant: Constants.actionButtonSize.height).isActive = true
+        actionButton.bottomAnchor.constraint(equalTo: tabBar.safeAreaLayoutGuide.bottomAnchor).isActive = true
+    }
+    
+    
+    // MARK: - Actions
+    
+    @objc private func actionButtonTapped(sender: UIButton) {
+        let customViewController = PhotoViewController()
+        let navigationController = UINavigationController(rootViewController: customViewController)
+
+        present(navigationController, animated: true) {
+            self.actionButton.isHidden = true
+        }
+        let vc = self.storyboard?.instantiateViewController(withIdentifier: "PhotoViewController")
+        self.present(vc!, animated: true, completion: nil)
+    }
+    
+    
+    // MARK: - Helpers
+    
+//    private func createTabbarControllers() {
+//        let systemTags = [EBRoundedTabBarItem.firstItem, .secondItem, .roundedItem, .thirdItem, .fourthItem]
+//        let viewControllers = systemTags.compactMap { self.createController(for: $0, with: $0.tag) }
+//
+//        self.viewControllers = viewControllers
+//    }
+    
+//    private func createController(for customTabBarItem: EBRoundedTabBarItem, with tag: Int) -> UINavigationController? {
+//        let viewController = UIViewController()
+//        viewController.title = customTabBarItem.title
+//        viewController.tabBarItem = customTabBarItem.tabBarItem
+//        viewController.view.backgroundColor = customTabBarItem.backgroundColor
+//
+//        return UINavigationController(rootViewController: viewController)
+//    }
+    
+    private func createTabbarControllers() {
+            let dashboardViewController = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "DashboardViewController")
+            let navigationController = UINavigationController(rootViewController: dashboardViewController)
+            navigationController.title = "Home"
+            navigationController.tabBarItem.image = UIImage(named: "homeicon")
+
+        let notificationViewController = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "NotificationsViewController")
+        let navigationController2 = UINavigationController(rootViewController: notificationViewController)
+        navigationController2.title = "Notifications"
+        navigationController2.tabBarItem.image = UIImage(named: "notifications")
+
+        let photoViewController = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "PhotoViewController")
+        let navigationController3 = UINavigationController(rootViewController: photoViewController)
+        navigationController3.title = "Camera"
+        navigationController3.tabBarItem.image = UIImage(named: "camera")
+
+        let missingPersonViewController = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "MissingPersonViewController")
+        let navigationController4 = UINavigationController(rootViewController: missingPersonViewController)
+        navigationController4.title = "Missing"
+        navigationController4.tabBarItem.image = UIImage(named: "missingIcon")
+
+        let chatViewController = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "ChatViewController")
+        let navigationController5 = UINavigationController(rootViewController: chatViewController)
+        navigationController5.title = "Chat"
+        navigationController5.tabBarItem.image = UIImage(named: "chatIcon")
+
+            let systemTags = [navigationController, navigationController2, navigationController3, navigationController4, navigationController5]
+        
+            //   let systemTags = [navigationController]
+            //       let viewControllers = systemTags.compactMap { self.createController(for: $0, with: $0.tag) }
+    
+            self.viewControllers = systemTags;
+        }
+}
+

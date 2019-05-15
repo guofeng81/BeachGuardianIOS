@@ -1,0 +1,44 @@
+import UIKit
+import AWSCognitoIdentityProvider
+
+protocol userDelegateProtocol {
+    var userDelegate: CognitoUserDelegate? {set get}
+}
+
+class userDelegate: userDelegateProtocol {
+    var userDelegate: CognitoUserDelegate?
+
+}
+
+class PopUpViewController: UIViewController {
+
+    var user: userDelegateProtocol? = userDelegate()
+    var completion_forDismiss: (()->Void)?
+    
+    @IBOutlet weak var signOut: UIButton!
+    @IBOutlet weak var close: UIButton!
+    @IBOutlet weak var identity: UITextField!
+    @IBOutlet weak var roleID: UITextField!
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        self.view.backgroundColor = UIColor.black.withAlphaComponent(0.6);
+        signOut.layer.cornerRadius = 8
+        close.layer.cornerRadius = 8
+    }
+    
+    @IBAction func SignOutFunc(_ sender: UIButton) {
+
+        if user?.userDelegate != nil {
+            user?.userDelegate!.user?.signOut()
+            self.dismiss(animated: true)
+            user?.userDelegate!.getUserDetails(from: user?.userDelegate!.user)
+        }
+    }
+    
+    @IBAction func ClosePopUp(_ sender: UIButton) {
+        self.dismiss(animated: true, completion: completion_forDismiss)
+    }
+
+}

@@ -1,0 +1,106 @@
+import UIKit
+import AWSS3
+import AWSMobileClient
+
+protocol UIApplicationProtocol {
+  func open(_ url: URL, 
+	  options: [UIApplication.OpenExternalURLOptionsKey : Any],
+		completionHandler completion: ((Bool) -> Void)?)
+}
+
+extension UIApplication : UIApplicationProtocol {}
+
+class DashboardViewController: UIViewController {
+    var uiApplication: UIApplicationProtocol?
+    
+    convenience init(uiApplication: UIApplicationProtocol = UIApplication.shared) {
+        self.init()
+        self.uiApplication = uiApplication
+    }
+    
+    @IBOutlet weak var BackgroundS3: UIImageView!
+    let s3bucket = "lifehaloios-deployments-mobilehub-641691893"
+    let photoKey = "photo-1496450413814-33fe92ef7ac0.jpg"
+    
+    @IBAction func call911Button(_ sender: Any) {
+        guard let url = URL(string: "tel://\(911)") else { return
+        }
+        uiApplication?.open(url, options: [:], completionHandler: nil);
+    }
+    
+    @IBAction func drownCall(_ sender: UIButton) {
+        guard let url = URL(string: "tel://\(4097634769)") else { return
+        }
+        uiApplication?.open(url, options: [:], completionHandler: nil);
+    }
+    
+    @IBAction func medicalCall(_ sender: Any) {
+        guard let url = URL(string: "tel://\(911)") else { return
+        }
+        uiApplication?.open(url, options: [:], completionHandler: nil);
+    }
+    
+    @IBAction func patrolCall(_ sender: Any) {
+        guard let url = URL(string: "tel://\(4097975182)") else { return
+        }
+        uiApplication?.open(url, options: [:], completionHandler: nil);
+    }
+    
+    @IBOutlet weak var call911Button: UIButton!
+    @IBOutlet weak var drowningButton: UIButton!
+    @IBOutlet weak var missingPersonButton: UIButton!
+    @IBOutlet weak var medicalButton: UIButton!
+    @IBOutlet weak var oceanHazardButton: UIButton!
+    @IBOutlet weak var disturbanceButton: UIButton!
+    @IBOutlet weak var marinemammalButton: UIButton!
+    @IBOutlet weak var beachPatrolButton: UIButton!
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        call911Button.layer.cornerRadius = 8
+        drowningButton.layer.cornerRadius = 8
+        missingPersonButton.layer.cornerRadius = 8
+        medicalButton.layer.cornerRadius = 8
+        oceanHazardButton.layer.cornerRadius = 8
+        disturbanceButton.layer.cornerRadius = 8
+        marinemammalButton.layer.cornerRadius = 8
+        beachPatrolButton.layer.cornerRadius = 8
+        
+        let backgroundImage = UIImageView(frame: UIScreen.main.bounds)
+        backgroundImage.image = UIImage(named: "beach.png")
+        backgroundImage.contentMode = UIView.ContentMode.scaleAspectFill
+        self.view.insertSubview(backgroundImage, at: 0)
+        obtainS3BeachGuardianImages()
+        AWSMobileClient.sharedInstance().initialize { (userState, error) in
+        
+        }
+    
+    }
+    
+    func obtainS3BeachGuardianImages() {
+        let fileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(photoKey)
+        let transferUtility = AWSS3TransferUtility.default()
+        let expression = AWSS3TransferUtilityDownloadExpression()
+        expression.progressBlock = {(task, progress) in
+        }
+        let completionBlockDownload:AWSS3TransferUtilityDownloadCompletionHandlerBlock? = {
+            (task, url, data, error) in DispatchQueue.main.async {
+                let data = try? Data(contentsOf: url!)
+                self.BackgroundS3.image = UIImage(data: (data ?? nil)!)
+                self.BackgroundS3.layer.zPosition = -5
+            }
+        }
+
+        transferUtility.download(
+                to: fileURL,
+                bucket: s3bucket,
+                key: photoKey,
+                expression: expression,
+                completionHandler: completionBlockDownload
+                ).continueWith(block:{(task) -> AnyObject? in
+                return nil
+           })
+        }
+    
+}

@@ -1,0 +1,75 @@
+//
+//  OpenChannelViewController.swift
+//  BeachGuardian
+//
+//  Created by Feng Guo on 3/13/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+import UIKit
+import TwilioChatClient
+
+class OpenChannelViewController: UIViewController,UITableViewDelegate {
+
+    
+    @IBOutlet var openChannelTableView: UITableView!
+    
+    let channels = ["Fireman", "Police", "Lifeguards"]
+    let channelImages = ["FireFighter","Police", "LifeGuard"]
+    var loginChannelName = ""
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+    }
+}
+
+extension OpenChannelViewController: UITableViewDataSource {
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return channels.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+       
+        let cell = tableView.dequeueReusableCell(withIdentifier: "openChannelCell", for: indexPath)
+        
+        cell.textLabel!.text = channels[indexPath.row]
+        cell.textLabel?.font = UIFont.systemFont(ofSize: 22)
+        cell.imageView?.image = UIImage(named: channelImages[indexPath.row])
+        
+        return cell
+    }
+    
+    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        return "Channels"
+    }
+    
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 100
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        if channels[indexPath.row] == "Fireman"{
+            loginChannelName = "Fireman"
+            performSegue(withIdentifier: "goToFireman", sender: self)
+        }else if channels[indexPath.row] == "Police" {
+            loginChannelName = "Police"
+            performSegue(withIdentifier: "goToFireman", sender: self)
+        }else if channels[indexPath.row] == "Lifeguards" {
+            loginChannelName = "Lifeguards"
+            performSegue(withIdentifier: "goToFireman", sender: self)
+        }
+    }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "goToFireman" {
+            let seg = segue.destination as! MessageViewController
+                seg.channelName = loginChannelName
+            }
+    }
+    
+    
+}
+
+    
+

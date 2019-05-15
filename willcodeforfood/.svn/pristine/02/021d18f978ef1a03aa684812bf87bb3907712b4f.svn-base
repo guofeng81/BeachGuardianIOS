@@ -1,0 +1,60 @@
+import Foundation
+import AWSCognitoIdentityProvider
+import TwilioChatClient
+
+struct Session {
+    var identity: String!
+    var role: String!
+    
+    init() {
+        identity = ""
+        role = ""
+    }
+}
+
+protocol CognitoUserDelegate {
+    var session: Session! { get set }
+    var user: AWSCognitoIdentityUser! { get set }
+    func getUserDetails(from user: AWSCognitoIdentityUser?)
+}
+
+class UserSession: CognitoUserDelegate {
+    var pool: AWSCognitoIdentityUserPool!
+    var user: AWSCognitoIdentityUser!
+    var response: AWSCognitoIdentityUserGetDetailsResponse!
+    var session: Session!
+    var dispatcher: AsyncProtocol = DispatchQueue.main
+    
+    init(){
+        session = Session()
+        self.pool = AWSCognitoIdentityUserPool(forKey: AWSCognitoUserPoolsSignInProviderKey)
+        self.setUser()
+        self.getUserDetails(from: self.user)
+    }
+    
+    func setUser(){
+        self.user = self.user ?? self.pool!.currentUser()
+    }
+    
+    func getUserDetails(from user: AWSCognitoIdentityUser?) {
+        self.user?.getDetails().continueOnSuccessWith { (task) -> AnyObject? in
+            self.extractDetails(result: task.result!)
+            return nil	
+        }
+    }
+    
+    func extractDetails(result: AWSCognitoIdentityUserGetDetailsResponse) {
+        
+        dispatcher.async(execute: {
+            self.response = result
+            let attributes = self.response.userAttributes!
+            let username = attributes.filter{ $0.name == "email"}
+            let role = attributes.filter{ $0.name == "custom:roleID"}
+            
+            self.session.identity = username[0].value
+            self.session.role = role[0].value
+        })
+    }
+
+    
+}

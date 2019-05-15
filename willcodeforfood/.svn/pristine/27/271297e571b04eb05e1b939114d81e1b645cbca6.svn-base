@@ -1,0 +1,65 @@
+import XCTest
+import AWSCognitoIdentityProvider
+@testable import BeachGuardian
+
+class PopUpViewControllerTests: XCTestCase {
+
+    var popUpVC: PopUpViewController!
+    
+    override func setUp() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let vc = storyboard.instantiateViewController(withIdentifier: "PopUpID")
+        popUpVC = vc as? PopUpViewController
+        popUpVC.loadViewIfNeeded()
+
+    }
+
+    func testPopUpViewControllerViewDidLoad() {
+        XCTAssertTrue(popUpVC.isViewLoaded)
+    }
+    
+    func test_if_userDelegateSignOut_resets_Identity(){
+        
+        class mockUser: AWSCognitoIdentityUser {
+            var called: Bool = false
+            
+            override func signOut() {
+                super.signOut()
+                self.called = true
+            }
+        }
+        
+        let user = mockUser()
+        popUpVC.user?.userDelegate = mockUserDelegate()
+        popUpVC.user?.userDelegate?.user = user
+        popUpVC.SignOutFunc(popUpVC.signOut)
+        XCTAssertTrue(user.called)
+    }
+    
+    func test_if_closeButton_dismissesVC(){
+        
+        class UserDelegate: userDelegateProtocol {
+            var userDelegate: CognitoUserDelegate?
+            var dismissCalled = false
+        }
+        let new_user_delegate = UserDelegate()
+        popUpVC.user = new_user_delegate
+        
+        popUpVC.completion_forDismiss = {
+            new_user_delegate.dismissCalled = true
+            XCTAssertTrue(new_user_delegate.dismissCalled)
+        }
+        popUpVC.ClosePopUp(popUpVC.close)
+        
+    }
+
+}
+
+class mockUserDelegate: CognitoUserDelegate {
+    var session: Session!
+    
+    var user: AWSCognitoIdentityUser!
+    
+    func getUserDetails(from user: AWSCognitoIdentityUser?) {
+    }
+}

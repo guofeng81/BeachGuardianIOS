@@ -1,0 +1,78 @@
+import UIKit
+import AWSCognitoIdentityProvider
+
+protocol AsyncProtocol {
+    func async(execute work: @escaping @convention(block) () -> Void)
+}
+
+extension DispatchQueue: AsyncProtocol {
+    func async(execute work: @escaping @convention(block) () -> Void){
+        async(group: nil, qos: .unspecified, flags: [], execute: work)
+    }
+}
+
+class SignInViewController: UIViewController, UITextFieldDelegate {
+    
+    @IBOutlet var loginView: UIView!
+    @IBOutlet var usernameTextField: UITextField!
+    @IBOutlet var passwordTextField: UITextField!
+    @IBOutlet weak var signInButton: UIButton!
+
+    var usernameText: String?
+    var nativeAlertController: UIAlertController!
+    var dispatchQueue: AsyncProtocol = DispatchQueue.main
+    var passwordAuthenticationCompletion: AWSTaskCompletionSource<AWSCognitoIdentityPasswordAuthenticationDetails>?
+
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector (loginViewTapped))
+        loginView.addGestureRecognizer(tapGesture)
+        
+        usernameTextField.delegate = self
+        passwordTextField.delegate = self
+    }
+    
+    @objc func loginViewTapped() {
+        self.view.endEditing(true)
+    }
+    
+    @IBAction func signInBtn(_ sender: UIButton) {
+        _ = self.signIn()
+    }
+    
+    func signIn() -> Bool{
+        let usernameValue: String = CognitoUtils.getValueFrom(usernameTextField)
+        let passwordValue: String = CognitoUtils.getValueFrom(passwordTextField)
+        
+        let credentials = AWSCognitoIdentityPasswordAuthenticationDetails(username: usernameValue, password: passwordValue)
+        let result = self.passwordAuthenticationCompletion?.trySet(result: credentials) ?? false
+        return result
+    }
+}
+
+extension SignInViewController: AWSCognitoIdentityPasswordAuthentication {
+    
+    public func getDetails(_ authenticationInput: AWSCognitoIdentityPasswordAuthenticationInput, passwordAuthenticationCompletionSource: AWSTaskCompletionSource<AWSCognitoIdentityPasswordAuthenticationDetails>) {
+        self.passwordAuthenticationCompletion = passwordAuthenticationCompletionSource
+        dispatchQueue.async {
+            if(self.usernameText == nil) {
+                self.usernameText = authenticationInput.lastKnownUsername
+            }
+        }
+    }
+    
+    public func didCompleteStepWithError(_ error: Error?) {
+        dispatchQueue.async { 
+            if let specificError = error as NSError? {
+                let errType = specificError.userInfo["__type"] as! String
+                self.nativeAlertController = AlertProvider.forCognitoSignIn(errType: errType)
+                self.present(self.nativeAlertController, animated: true, completion:  nil)
+            } else {
+                self.usernameTextField.text = nil
+                self.passwordTextField.text = nil
+                self.dismiss(animated: true, completion: nil)
+            }
+        }
+    }
+}

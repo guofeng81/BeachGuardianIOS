@@ -1,0 +1,41 @@
+import XCTest
+@testable import BeachGuardian
+
+class ErrorHandlerTests: XCTestCase {
+
+    var alertVC: UIAlertController!
+    var errType: String!
+    var expectedErrMessage: String!
+    
+    func test_if_CognitoSignIn_provides_correctAlertMessages(){
+        errType = "UserNotConfirmedException"
+        alertVC = AlertProvider.forCognitoSignIn(errType: errType)
+        expectedErrMessage = errType! + " encountered. Please contact an admin regarding this error."
+        XCTAssertEqual(alertVC.message, expectedErrMessage)
+        
+        
+        errType = "NotAuthorizedException"
+        alertVC = AlertProvider.forCognitoSignIn(errType: errType)
+        expectedErrMessage = AlertProvider.failAuth
+        XCTAssertEqual(alertVC.message, expectedErrMessage)
+        
+        
+        errType = "InvalidParameterException"
+        alertVC = AlertProvider.forCognitoSignIn(errType: errType)
+        expectedErrMessage = AlertProvider.emptyAuth
+        XCTAssertEqual(alertVC.message, expectedErrMessage)
+        
+        
+        errType = "UnaccountedForException"
+        alertVC = AlertProvider.forCognitoSignIn(errType: errType)
+        expectedErrMessage = "Unexpected " + errType + " encountered. Please contact an admin regarding this error."
+        XCTAssertEqual(alertVC.message, expectedErrMessage)
+    }
+    
+    func test_if_CognitoSignUp_provides_correctAlertMessages(){
+        errType = "Unknown error"
+        alertVC = AlertProvider.forCognitoSignUp(errType: errType)
+        expectedErrMessage = AlertProvider.defaultSignUpError
+        XCTAssertEqual(alertVC.message, expectedErrMessage)    }
+
+}

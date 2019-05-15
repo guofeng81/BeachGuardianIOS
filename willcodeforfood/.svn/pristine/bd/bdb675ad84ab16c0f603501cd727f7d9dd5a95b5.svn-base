@@ -1,0 +1,209 @@
+
+import XCTest
+import AWSS3
+@testable import BeachGuardian
+
+class OceanHazardTests: XCTestCase {
+    
+    var hazardsFormVC: BeachGuardian.OceanHazardTableViewController!
+    var picker1 = UIPickerView()
+    var meInDangerYes = UIButton()
+    var meInDangerNo = UIButton()
+    var othersInDangerYes = UIButton()
+    var othersInDangerNo = UIButton()
+    var tapGesture = UITapGestureRecognizer()
+    var textBox = UITextView()
+    
+    override func setUp() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let vc = storyboard.instantiateViewController(withIdentifier: "HazardsFormViewController") as! OceanHazardTableViewController
+        hazardsFormVC = vc as OceanHazardTableViewController
+        hazardsFormVC.loadViewIfNeeded()
+        
+        picker1 = hazardsFormVC.hazardPicker
+        meInDangerYes = hazardsFormVC.CellTwoYES
+        meInDangerNo = hazardsFormVC.CellTwoNO
+        othersInDangerYes = hazardsFormVC.CellThreeYES
+        othersInDangerNo = hazardsFormVC.CellThreeNO
+        tapGesture = hazardsFormVC.viewTapGestureRec
+        textBox = hazardsFormVC.textView
+        textBox.text = "test"
+    }
+    
+    func testOceanHazardViewDidLoad() {
+        XCTAssertTrue(hazardsFormVC.isViewLoaded)
+    }
+    
+    func testNumberPickerSections() {
+        XCTAssertEqual(hazardsFormVC.numberOfSections(in: hazardsFormVC.tableView), 1)
+        XCTAssertEqual(hazardsFormVC.tableView(hazardsFormVC.MainTable, numberOfRowsInSection: 5), 5)
+    }
+    
+    func testNumberOfComponents() {
+        XCTAssertEqual(hazardsFormVC.numberOfComponents(in: picker1), 1)
+    }
+    
+    func testPickerLoadsValues() {
+        XCTAssertEqual(hazardsFormVC.pickerView(picker1, titleForRow: 0, forComponent: 0), "Oil Spill/Derrame petróleo")
+    }
+    
+    func testNumberPickerRows() {
+        XCTAssertEqual(hazardsFormVC.pickerView(picker1, numberOfRowsInComponent: 1), 4)
+    }
+    
+    func testTextBoxValues() {
+        hazardsFormVC.textViewDidEndEditing(textBox)
+        XCTAssertEqual(textBox.text!, hazardsFormVC.additionalInfo)
+    }
+    
+    func testFormButtons() {
+        hazardsFormVC.IAmInDanger(meInDangerYes)
+        XCTAssertTrue(hazardsFormVC.RUInDanger)
+        
+        hazardsFormVC.IAmNotInDanger(meInDangerNo)
+        XCTAssertFalse(hazardsFormVC.RUInDanger)
+        
+        hazardsFormVC.IAmInDanger(meInDangerYes)
+        XCTAssertTrue(hazardsFormVC.RUInDanger)
+        
+        hazardsFormVC.OthersAreInDanger(othersInDangerYes)
+        XCTAssertTrue(hazardsFormVC.othersInDanger)
+        
+        hazardsFormVC.OthersAreNotInDanger(othersInDangerNo)
+        XCTAssertFalse(hazardsFormVC.othersInDanger)
+
+        hazardsFormVC.OthersAreInDanger(othersInDangerYes)
+        XCTAssertTrue(hazardsFormVC.othersInDanger)
+        
+    }
+    
+    func testPickerStoresValues() {
+        hazardsFormVC.pickerView(picker1, didSelectRow: 0, inComponent: 1)
+        XCTAssertEqual(hazardsFormVC.selectedHazard, "Oil Spill/Derrame petróleo")
+    }
+    
+    func testTapRecognizer() {
+        XCTAssertNotNil(hazardsFormVC.tap(recognizer: tapGesture))
+        
+        hazardsFormVC.textViewDidBeginEditing(textBox)
+        XCTAssertEqual(textBox.textColor, .black)
+        XCTAssertTrue(hazardsFormVC.textView(textBox, shouldChangeTextIn: NSMakeRange(0,200), replacementText: (textBox.text)!))
+    }
+    
+    func testProcessOceanHazardRequestSuccess(){
+        hazardsFormVC.s3Url = (URL(string: "https://s3.console.aws.amazon.com/s3/object/"))
+        let imageToTest = UIImage(named: "camera2")
+        let fileName = "missing.png"
+        let fileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
+        let key = ProcessInfo.processInfo.globallyUniqueString + ".png"
+        let imageData = imageToTest?.jpegData(compressionQuality: 1.0)
+        do
+        {
+            try imageData!.write(to: fileURL, options: [.atomic])
+        }
+        catch{}
+        let transferUtility = AWSS3TransferUtility.default()
+        _ = hazardsFormVC.processRequest(transferUtility: transferUtility, key: key, fileURL: fileURL){task in
+            XCTAssertEqual(self.hazardsFormVC.s3Error, false)
+        }
+    }
+    
+    func testProcessOceanHazardsRequestFailure(){
+        self.hazardsFormVC.s3Url = (URL(string: "https://s3.console.aws.amazon.com/s3/object/"))
+        let imageToTest = UIImage(named: "camera2")
+        let fileName = "missing.png"
+        let fileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
+        let key = ProcessInfo.processInfo.globallyUniqueString + ".png"
+        let imageData = imageToTest?.jpegData(compressionQuality: 1.0)
+        do
+        {
+            try imageData!.write(to: fileURL, options: [.atomic])
+        }
+        catch{}
+        let transferUtility = AWSS3TransferUtility.default()
+        _ = self.hazardsFormVC.processRequest(transferUtility: transferUtility, key: key, fileURL: URL(string: "failure")!){task in
+        }
+        XCTAssertEqual(self.hazardsFormVC.s3Error, true)
+    }
+    
+    func testEmptyDictionaryImagePickerController(){
+        let imagePickerController = UIImagePickerController()
+        let emptyDictionary = [UIImagePickerController.InfoKey: Any]()
+        hazardsFormVC.imagePickerController(imagePickerController, didFinishPickingMediaWithInfo: emptyDictionary)
+        XCTAssertNil(hazardsFormVC.oceanHazardImage.image)
+    }
+    
+    func testImagePickerController(){
+        var nonEmptyDictionary = [UIImagePickerController.InfoKey: Any]()
+        nonEmptyDictionary[UIImagePickerController.InfoKey.originalImage] = UIImage(named: "camera2")
+        let imagePickerController = UIImagePickerController()
+        hazardsFormVC.imagePickerController(imagePickerController, didFinishPickingMediaWithInfo: nonEmptyDictionary)
+        XCTAssertNotNil(hazardsFormVC.oceanHazardImage.image)
+    }
+    
+    func testUploadPhoto(){
+        let uiImageViewMock = UIImageViewMock()
+        uiImageViewMock._image = UIImage(named: "camera2")
+        hazardsFormVC.oceanHazardImage = uiImageViewMock
+        XCTAssertNotNil(hazardsFormVC.submitReportUsingPhoto(oceanHazardImage:
+            hazardsFormVC.oceanHazardImage))
+    }
+    
+    func testSubmitAWSPictureWithNoPicture() {
+        let alertVerifier = QCOMockAlertVerifier()
+        hazardsFormVC.oceanHazardImage = nil
+        hazardsFormVC.submitReport([])
+        XCTAssertEqual(alertVerifier.title, "No picture chosen")
+    }
+    
+    func testDisplaySubmittedMessage()
+    {
+        let alertVerifier = QCOMockAlertVerifier()
+        hazardsFormVC.displaySubmittedMessage()
+        XCTAssertEqual(alertVerifier.title, "Report Submitted")
+    }
+    
+    func test_DismissIndicator_ShowsMessage()
+    {
+        let alertVerifier = QCOMockAlertVerifier()
+        hazardsFormVC.dismissAlert()
+        XCTAssertEqual(alertVerifier.title, "Report Submitted")
+    }
+    
+    func test_DisplayNoSubmittedMessage()
+    {
+        let alertVerifier = QCOMockAlertVerifier()
+        hazardsFormVC.displayNoPictureMessage()
+        XCTAssertEqual(alertVerifier.title, "No picture chosen")
+    }
+    
+    func testUploadPhotoIBAction(){
+        XCTAssertNoThrow(hazardsFormVC.uploadPhoto((Any).self))
+    }
+    
+    func testTakePhotoIBAction(){
+        XCTAssertNoThrow(hazardsFormVC.takePhoto((Any).self))
+    }
+    
+    func testSubmitPhoto_GetReportSubmitted(){
+        var imageToTest : UIImageView?
+        let image: UIImage = UIImage(named: "camera2")!
+        imageToTest = UIImageView(image: image)
+        hazardsFormVC.oceanHazardImage.image = image
+        hazardsFormVC.submitReportUsingPhoto(oceanHazardImage: imageToTest )
+        XCTAssertEqual(hazardsFormVC.s3Error, false)
+    }
+    
+    func test_OpenPhotoActionPicker_HardwareAvailable()
+    {
+        class MockUIImagePicker : UIImagePickerController
+        {
+            override class func isSourceTypeAvailable(_ sourceType: UIImagePickerController.SourceType) -> Bool {
+                return true
+            }
+        }
+        
+        hazardsFormVC.openCamera(serviceProvider: MockUIImagePicker.self)
+        XCTAssertEqual(hazardsFormVC.imagePicker.sourceType, UIImagePickerController.SourceType(rawValue: 1)!)
+    }
+}

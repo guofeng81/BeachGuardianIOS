@@ -1,0 +1,141 @@
+//
+//  DataFromDB.swift
+//  BeachGuardian
+//
+//  Created by Vincent Poon on 3/18/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+import UIKit
+import Foundation
+
+
+struct personInfo: Encodable, Decodable{
+    
+    let missingFirstName: String
+    let missingLastName: String
+    let missingStatus: String
+    let clothing: String
+    let lastLocation: String
+    let hairColor: String
+    let lastTimeSeen: String
+    let ethnicity: String
+    let age: String
+    let gender: String
+    let directionFromTower: String
+    let closestTower: String
+    let missingPersonPhoto: String
+    let locationID: String
+    let missingID: String
+    
+    let contactFirstName: String
+    let contactLastName: String
+    let contactPhone: String
+    let secondaryPhone: String
+    let contactID: String
+    let caseID: String
+    let status: String
+    let reportedBy: String
+    let closedBy: String?
+    let ackCommandSt:String
+    let resolvedBy: String?
+    let lastUpdate: String
+    let createdAt: String
+    let completedAt: String?
+    let locationName: String
+    let locationState: String
+    let locationCity: String
+    let drowningNum: String
+    let medicalNum: String
+    let beachPatrolNum: String
+    let disturbancesNum: String
+    
+    let lastTimeSeenFormatted: String
+    let lastDateSeenFormatted: String
+    let lastUpdateTime: String
+    let lastUpdateDate: String
+    let createdAtTime: String
+    let createdAtDate: String
+}
+
+class DataFromDB{
+    
+    private var session: URLSessionProtocol
+    let list = [personInfo]()
+    
+    init(session : URLSessionProtocol)
+    {
+        self.session = session
+    }
+    
+    init()
+    {
+        let config = URLSessionConfiguration.default
+        self.session = URLSession(configuration: config)
+    }
+    
+    func getGETURL(varInRoute : String) -> String
+    {
+        var url = "http://18.191.192.209/v2/"
+        url.append(varInRoute)
+        return url
+    }
+    
+    typealias completeClosure = ( _ data: Data?, _ error: Error?) -> Void
+    func getRequest(url : String, completion: @escaping completeClosure){
+        let urlObj = URL(string: url)
+        var request = URLRequest(url: urlObj!)
+        request.httpMethod = "GET"
+        let task = session.dataTask(with: request){(data, response, error) in
+            do{
+                completion(data, error)
+            }
+        }
+        task.resume()
+    }
+    
+    func convertData(data : Data!, completion: @escaping ([personInfo]) -> ())
+    {
+        do{
+            let info = try JSONDecoder().decode([personInfo].self, from: data!)
+            completion(info)
+        } catch {
+            completion(list)
+        }
+    }
+    
+    func getAndConvertData(url : String, completion: @escaping ([personInfo]) -> ())
+    {
+        getRequest(url: url){(data, error) in
+            self.convertData(data: data){item in
+                completion(item)
+            }
+        }
+    }
+    
+    func encodeData(info : personInfo) -> Data
+    {
+        var jsonData = Data()
+        let jsonEncoder = JSONEncoder()
+        do
+        {
+            jsonData = try jsonEncoder.encode([info])
+        }
+        catch{
+        }
+        return jsonData
+    }
+    
+    func postRequest(url : String, data: Data, completion: @escaping completeClosure){
+        let urlObj = URL(string: url)
+        var request = URLRequest(url: urlObj!)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let task = session.uploadTask(with: request, from: data){(data, response, error) in
+            do{
+                completion(data, error)
+            }
+        }
+        task.resume()
+    }
+}

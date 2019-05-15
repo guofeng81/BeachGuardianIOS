@@ -1,0 +1,165 @@
+//
+//  MissingPersonsTests.swift
+//  BeachGuardianTests
+//
+//  Created by Aaron Mitchell on 3/25/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+import XCTest
+@testable import BeachGuardian
+
+class MissingPersonsTests: XCTestCase {
+    
+    var missingPersonVC: BeachGuardian.MissingPersonTableViewController!
+    var picker1 = UIPickerView()
+    var picker2 = UIPickerView()
+    var picker3 = UIPickerView()
+    var picker4 = UIPickerView()
+    var button = UIButton()
+    var male_Button = UIButton()
+    var female_Button = UIButton()
+    var slider = UISlider()
+    var nameField = UITextField()
+    var ageField = UITextField()
+    var hairColorField = UITextField()
+    var clothingField = UITextField()
+    var contactFirst = UITextField()
+    var contactLast = UITextField()
+    var contactPhone = UITextField()
+    var contactPhone2 = UITextField()
+    
+    override func setUp() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let vc = storyboard.instantiateViewController(withIdentifier: "MissingPersonTableViewController") as! MissingPersonTableViewController
+        missingPersonVC = vc as MissingPersonTableViewController
+        missingPersonVC.loadViewIfNeeded()
+        
+        picker1 = missingPersonVC.locationPicker
+        picker2 = missingPersonVC.lastSeenPicker
+        picker3 = missingPersonVC.ethnicityPicker
+        picker4 = missingPersonVC.directionPicker
+        
+        slider = missingPersonVC.towerSlider
+        slider.value = 5.0
+        
+        male_Button = missingPersonVC.maleButton
+        female_Button = missingPersonVC.femaleButton
+        
+        nameField = missingPersonVC.nameField
+        nameField.text = "Stan"
+        nameField.tag = 10
+        
+        ageField = missingPersonVC.ageField
+        ageField.text = "20"
+        ageField.tag = 11
+        
+        hairColorField = missingPersonVC.hairColorField
+        hairColorField.text = "Black"
+        hairColorField.tag = 12
+        
+        clothingField = missingPersonVC.clothingField
+        clothingField.text = "Shirt"
+        clothingField.tag = 13
+        
+        contactFirst = missingPersonVC.contactFirst
+        contactFirst.text = "Chad"
+        contactFirst.tag = 14
+        
+        contactLast = missingPersonVC.contactLast
+        contactLast.text = "Ryles"
+        contactLast.tag = 15
+        
+        contactPhone = missingPersonVC.contactPhone
+        contactPhone.text = "8675309"
+        contactPhone.tag = 16
+        
+        contactPhone2 = missingPersonVC.contactPhone2
+        contactPhone2.text = "8675309"
+        contactPhone2.tag = 17
+    }
+    
+    func testMissingPersonViewDidLoad(){
+         XCTAssertTrue(missingPersonVC.isViewLoaded)
+    }
+    
+    func testNumberOfSectionsAndRows() {
+        XCTAssertEqual(missingPersonVC.numberOfSections(in: missingPersonVC.mainTable), 1)
+        XCTAssertEqual(missingPersonVC.tableView(missingPersonVC.mainTable, numberOfRowsInSection: 12), 12)
+    }
+    
+    func testNumberPickerComponents() {
+        XCTAssertEqual(missingPersonVC.numberOfComponents(in: picker1), 1)
+    }
+    
+    func testPickerValues() {
+        XCTAssertEqual(missingPersonVC.pickerView(picker1, titleForRow: 0, forComponent: 0), "Water")
+        XCTAssertEqual(missingPersonVC.pickerView(picker2, titleForRow: 0, forComponent: 0), "5 Minutes Ago")
+        XCTAssertEqual(missingPersonVC.pickerView(picker3, titleForRow: 0, forComponent: 0), "American Indian/Alaskan")
+        XCTAssertEqual(missingPersonVC.pickerView(picker4, titleForRow: 0, forComponent: 0), "North")
+        
+    }
+    
+    func testNumberPickerRows() {
+        XCTAssertEqual(missingPersonVC.pickerView(picker1, numberOfRowsInComponent: 1), 4)
+        XCTAssertEqual(missingPersonVC.pickerView(picker2, numberOfRowsInComponent: 1), 5)
+        XCTAssertEqual(missingPersonVC.pickerView(picker3, numberOfRowsInComponent: 1), 7)
+        XCTAssertEqual(missingPersonVC.pickerView(picker4, numberOfRowsInComponent: 1), 8)
+    }
+    
+    func testSliderValue() {
+        slider.value = 6.0
+        missingPersonVC.sliderValueChanged(slider)
+        XCTAssertEqual(missingPersonVC.sliderValue, 6)
+        XCTAssertEqual(missingPersonVC.towerLabel.text, "6")
+    }
+    
+    func testTextFieldValues() {
+        missingPersonVC.textFieldDidEndEditing(nameField)
+        missingPersonVC.textFieldDidEndEditing(ageField)
+        missingPersonVC.textFieldDidEndEditing(hairColorField)
+        missingPersonVC.textFieldDidEndEditing(clothingField)
+        missingPersonVC.textFieldDidEndEditing(contactFirst)
+        missingPersonVC.textFieldDidEndEditing(contactLast)
+        missingPersonVC.textFieldDidEndEditing(contactPhone)
+        missingPersonVC.textFieldDidEndEditing(contactPhone2)
+        
+        XCTAssertEqual(nameField.text!, missingPersonVC.name)
+        XCTAssertEqual(ageField.text!, missingPersonVC.age)
+        XCTAssertEqual(hairColorField.text!, missingPersonVC.hairColor)
+        XCTAssertEqual(clothingField.text!, missingPersonVC.clothing)
+        XCTAssertEqual(contactFirst.text!, missingPersonVC.contactFirstName)
+        XCTAssertEqual(contactLast.text!, missingPersonVC.contactLastName)
+        XCTAssertEqual(contactPhone.text!, missingPersonVC.contactPhoneNum)
+        XCTAssertEqual(contactPhone2.text!, missingPersonVC.contactPhoneNum2)
+    }
+    
+    func testMaleFemaleButtons() {
+        missingPersonVC.maleButtonClicked(male_Button)
+        XCTAssertTrue(missingPersonVC.male)
+        XCTAssertFalse(missingPersonVC.female)
+        
+        missingPersonVC.femaleButtonClicked(female_Button)
+        XCTAssertTrue(missingPersonVC.female)
+        XCTAssertFalse(missingPersonVC.male)
+        
+        missingPersonVC.maleButtonClicked(male_Button)
+        XCTAssertTrue(missingPersonVC.male)
+        XCTAssertFalse(missingPersonVC.female)
+    }
+    
+    func testPickerStoresValues() {
+        missingPersonVC.pickerView(picker1, didSelectRow: 0, inComponent: 1)
+        XCTAssertEqual(missingPersonVC.selectedLocation, "Water")
+        
+        missingPersonVC.pickerView(picker2, didSelectRow: 0, inComponent: 1)
+        XCTAssertEqual(missingPersonVC.selectedTime, "5 Minutes Ago")
+        
+        missingPersonVC.pickerView(picker3, didSelectRow: 0, inComponent: 1)
+        XCTAssertEqual(missingPersonVC.selectedEthnicity, "American Indian/Alaskan")
+        
+        missingPersonVC.pickerView(picker4, didSelectRow: 0, inComponent: 1)
+        XCTAssertEqual(missingPersonVC.selectedDirection, "North")
+    }
+    
+}

@@ -1,0 +1,255 @@
+//
+//  disturbanceTableViewController.swift
+//  BeachGuardian
+//
+//  Created by Sebastian Macedonio on 3/10/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+import UIKit
+import AWSS3
+
+class disturbanceTableViewController: UITableViewController, UIPickerViewDelegate, UIPickerViewDataSource, UIImagePickerControllerDelegate, UINavigationControllerDelegate, UITextFieldDelegate, UITextViewDelegate {
+    
+    var contentURL: URL!
+    var s3Url: URL!
+    var bucketName = "lifehaloios-deployments-mobilehub-641691893"
+    var s3Error = false
+    public var imagePicker : UIImagePickerController! = nil
+    
+    let disturbanceTypes = ["Public Disturbance/Disturbio Publico", "Alcohol", "Vandalism/Vandalismo", "Theft/Robo", "Fighting/Pelea", "Broken Glass/Vidrio Roto"]
+    
+    var selectedDisturbance = ""
+    var additionalInfo = ""
+    
+    var yesIam = false;
+    var noIam = false;
+    var yesOthers = false;
+    var noOthers = false;
+    
+    @IBOutlet weak var disturbanceImage: UIImageView!
+    @IBOutlet weak var disturbancePicker: UIPickerView!
+    @IBOutlet weak var textView: UITextView!
+    @IBOutlet var mainTable: UITableView!
+    @IBOutlet weak var selfDangerYes: UIButton!
+    @IBOutlet weak var selfDangerNo: UIButton!
+    @IBOutlet weak var othersDangerYes: UIButton!
+    @IBOutlet weak var OthersDangerNo: UIButton!
+    
+    let viewTapGestureRec = UITapGestureRecognizer(target: self, action: #selector(tap(recognizer:)))
+    
+    
+    @IBAction func selfDangerYesSelected(_ sender: UIButton) {
+        yesIam = true
+        noIam = false
+        
+        sender.isSelected = !sender.isSelected
+        if selfDangerNo.isSelected{
+            selfDangerNo.isSelected = !selfDangerNo.isSelected
+        }
+    }
+    
+    @IBAction func selfDangerNoSelected(_ sender: UIButton) {
+        yesIam = false
+        noIam = true
+        
+        sender.isSelected = !sender.isSelected
+        if selfDangerYes.isSelected{
+            selfDangerYes.isSelected = !selfDangerYes.isSelected
+        }
+    }
+    
+    @IBAction func othersDangerYesSelected(_ sender: UIButton) {
+        yesOthers = true
+        noOthers = false
+        
+        sender.isSelected = !sender.isSelected
+        if OthersDangerNo.isSelected{
+            OthersDangerNo.isSelected = !OthersDangerNo.isSelected
+        }
+    }
+    @IBAction func othersDangerNoSelected(_ sender: UIButton) {
+        yesOthers = false
+        noOthers = true
+        
+        sender.isSelected = !sender.isSelected
+        if othersDangerYes.isSelected{
+            othersDangerYes.isSelected = !othersDangerYes.isSelected
+        }
+    }
+    
+    func numberOfComponents(in pickerView: UIPickerView) -> Int {
+        return 1
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+        return pickerViewSelect(pickerView.tag, row)
+    }
+    
+    func pickerViewSelect(_ tag: Int, _ row: Int){
+        if(tag == 1){
+            selectedDisturbance = disturbanceTypes[row]
+        }
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
+        return pickerViewCount(pickerView.tag)
+    }
+    
+    func pickerViewCount(_ tag: Int) -> Int {
+        return disturbanceTypes.count
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
+        return pickerViewContent(pickerView.tag, row)
+    }
+    
+    func pickerViewContent(_ tag: Int, _ row: Int) -> String?{
+        return disturbanceTypes[row]
+    }
+    
+    func textViewDidBeginEditing(_ textView: UITextView){
+        textView.becomeFirstResponder()
+        if textView.textColor == UIColor.lightGray{
+            textView.text = nil
+            textView.becomeFirstResponder()
+            textView.textColor = UIColor.black
+        }
+    }
+    
+    func textView(_ addInfoField: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool{
+        return addInfoField.text.count + (text.count - range.length) <= 200
+    }
+    
+    func textViewDidEndEditing(_ textView: UITextView){
+        additionalInfo = textView.text
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        disturbancePicker.delegate = self
+        disturbancePicker.dataSource = self
+        disturbancePicker.tag = 1
+        disturbancePicker.accessibilityIdentifier = "disturbance-type"
+        
+        selectedDisturbance = disturbanceTypes[0]
+        textView.delegate = self
+        textView.layer.cornerRadius = 10
+        textView.text = "200 Character Limit"
+        textView.textColor = UIColor.lightGray
+        
+        viewTapGestureRec.cancelsTouchesInView = false
+        self.view.addGestureRecognizer(viewTapGestureRec)
+    }
+    
+    @objc func tap(recognizer: UITapGestureRecognizer){
+        textView.resignFirstResponder()
+    }
+
+    override func numberOfSections(in tableView: UITableView) -> Int {
+        return 1
+    }
+
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return 5
+    }
+    
+    @IBAction func takePhoto(_ sender: Any)
+    {
+        openCamera()
+    }
+    
+    func openCamera(serviceProvider: UIImagePickerController.Type = UIImagePickerController.self)
+    {
+        imagePicker = serviceProvider.init()
+        imagePicker.delegate = self
+        if serviceProvider.isSourceTypeAvailable(.camera){
+            self.imagePicker.sourceType = .camera
+            self.present(imagePicker, animated: true, completion: nil)
+        }
+    }
+    
+    @IBAction func choosePhoto(_ sender: Any) {
+        let imagePickerController = UIImagePickerController()
+        imagePickerController.delegate = self as UIImagePickerControllerDelegate & UINavigationControllerDelegate
+        imagePickerController.sourceType = .photoLibrary
+        self.present(imagePickerController, animated: true, completion: nil)
+    }
+
+    @objc func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]){
+        guard let selectedImage = info[UIImagePickerController.InfoKey.originalImage] as? UIImage
+            else{
+                return
+        }
+        disturbanceImage.image = selectedImage
+        picker.dismiss(animated: true, completion: nil)
+    }
+    
+    @IBAction func submitReport(_ sender: Any) {
+        let alert = UIAlertController(title: nil, message: "Please wait...", preferredStyle: .alert)
+        
+        let loadingIndicator = UIActivityIndicatorView(frame: CGRect(x: 10, y: 5, width: 50, height: 50))
+        loadingIndicator.hidesWhenStopped = true
+        loadingIndicator.style = UIActivityIndicatorView.Style.gray
+        loadingIndicator.startAnimating();
+        alert.view.addSubview(loadingIndicator)
+        submitReportUsingPhoto(disturbanceImage : disturbanceImage)
+    }
+    
+    func submitReportUsingPhoto(disturbanceImage : UIImageView? ){
+        s3Url = AWSS3.default().configuration.endpoint.url
+        guard (disturbanceImage?.image) != nil else {
+            displayNoPictureMessage()
+            return
+        }
+        
+        let fileName = "disturbance.png"
+        let fileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
+        let key = ProcessInfo.processInfo.globallyUniqueString + ".png"
+        let imageData = disturbanceImage!.image?.jpegData(compressionQuality: 1.0)
+        do
+        {
+            try imageData!.write(to: fileURL, options: [.atomic])
+        }
+        catch{}
+        let transferUtility = AWSS3TransferUtility.default()
+        processRequest(transferUtility : transferUtility, key: key, fileURL: fileURL){ success in }
+    }
+    
+    func processRequest(transferUtility : AWSS3TransferUtility, key: String, fileURL: URL, completion: @escaping(Bool) ->()){
+        transferUtility.uploadFile(fileURL, bucket: S3Configuration.BUCKET_NAME.rawValue, key: key, contentType: "image/png", expression: nil, completionHandler: nil).continueWith {
+            (task) -> AnyObject? in
+            if task.error != nil{
+                self.s3Error = true
+                completion(true)
+                return nil
+            }
+            
+            if let _ = task.result {
+            }
+            self.displaySubmittedMessage()
+            self.s3Error = false
+            return nil
+        }
+    }
+    
+    internal func dismissAlert() { if let vc = self.presentedViewController, vc is UIAlertController { dismiss(animated: false, completion: nil) }
+        displaySubmittedMessage()
+    }
+    
+    func displaySubmittedMessage()
+    {
+        let alertController = UIAlertController(title: "Report Submitted", message: "Your report has been submitted", preferredStyle: .alert)
+        let OKAction = UIAlertAction(title: "OK", style: .default) {(action: UIAlertAction!) in}
+        alertController.addAction(OKAction)
+        self.present(alertController, animated: true, completion: nil)
+    }
+    
+    func displayNoPictureMessage()
+    {
+        let alertController = UIAlertController(title: "No picture chosen", message: "You have not uploaded a picture to be submitted", preferredStyle: .alert)
+        let OKAction = UIAlertAction(title: "OK", style: .default) {(action: UIAlertAction!) in}
+        alertController.addAction(OKAction)
+        self.present(alertController, animated: true, completion: nil)
+    }
+}

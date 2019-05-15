@@ -1,0 +1,77 @@
+import UIKit
+import Foundation
+import TwilioChatClient
+
+struct tokenInfo: Encodable, Decodable
+{
+    let token: String?
+    let identity: String?
+}
+
+class TokenUtils {
+    private let session: URLSessionProtocol
+    
+        let urlString:String?
+        let client:TwilioChatClient?
+        let generalChannel:TCHChannel?
+        let messages:[TCHMessage]?
+        let identity:String?
+        let deviceId:String?
+        let tokenURL:String?
+    
+    init(session : URLSessionProtocol){
+        self.session = session
+        tokenURL = "https://crimson-mastiff-6542.twil.io/chat-token"
+        identity = "Leo"
+        deviceId = UIDevice.current.identifierForVendor!.uuidString
+        urlString = "\(tokenURL)?identity=\(identity)&device=\(deviceId)"
+        client = nil
+        generalChannel = nil
+        messages = []
+    }
+    
+    
+    typealias completeClosure = ( _ data: Data?, _ error: Error?) -> Void
+    
+    func retrieveTokenDataTask(url: String, completion: @escaping completeClosure) {
+        let requestURL = URL(string: url)
+        let URLRequests = URLRequest(url: requestURL!)
+            let task = session.dataTask(with: URLRequests, completionHandler: { (data, response, error) in
+                if let data = data {
+                    completion(data, error)
+                } else {
+                    completion(nil, error)
+                }
+            })
+            task.resume()
+    }
+    
+     func getJson(data : Data!, completion : @escaping (String?, String?, Error?) -> Void)
+    {
+        do {
+            let info = try JSONDecoder().decode(tokenInfo.self, from: data!)
+            completion(info.token, info.identity, nil)
+        }
+        catch let error as NSError {
+            completion(nil, nil, error)
+        }
+    }
+    
+     func retriveTokens(url : String, completion : @escaping (String?, String?, Error?) -> Void)
+    {
+        retrieveTokenDataTask(url: url) { (data, error) in
+            self.getJson(data: data){ (token, identity, error) in
+                completion(token, identity, error)
+            }
+        }
+    }
+}
+
+struct CognitoUtils {
+    static func getValueFrom(_ textField: UITextField) -> String{
+        guard let value = textField.text else {
+            return ""
+        }
+        return value
+    }
+}

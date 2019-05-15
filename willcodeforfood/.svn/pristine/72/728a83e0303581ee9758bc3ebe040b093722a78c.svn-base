@@ -1,0 +1,143 @@
+import XCTest
+import AWSCognitoIdentityProvider
+@testable import BeachGuardian
+
+class UIApplicationMock : UIApplicationProtocol {
+    
+    var theGivenURL: URL?
+    
+    func open(_ url: URL, options: [UIApplication.OpenExternalURLOptionsKey : Any], completionHandler completion: ((Bool) -> Void)?) {
+        theGivenURL = url
+    }
+}
+
+class BeachGuardianTests: XCTestCase {
+    
+    let dashboardInstance = DashboardViewController()
+    
+    func testCanary() {
+        XCTAssertTrue(true)
+    }
+    
+    func testDrownCall() {
+        let mockUIApplication = UIApplicationMock()
+        
+        let testInstance = DashboardViewController(uiApplication: mockUIApplication)
+
+        testInstance.drownCall(UIButton())
+        
+        XCTAssertEqual(mockUIApplication.theGivenURL?.absoluteString, "tel://\(4097634769)")
+    }
+
+
+    func test911Call() {
+        let mockUIApplication = UIApplicationMock()
+        
+        let testInstance = DashboardViewController(uiApplication: mockUIApplication)
+        
+        testInstance.call911Button(UIButton())
+        
+        XCTAssertEqual(mockUIApplication.theGivenURL?.absoluteString, "tel://\(911)")
+    }
+    
+    func testMedicalCall() {
+        let mockUIApplication = UIApplicationMock()
+        
+        let testInstance = DashboardViewController(uiApplication: mockUIApplication)
+        
+        testInstance.medicalCall(UIButton())
+        
+        XCTAssertEqual(mockUIApplication.theGivenURL?.absoluteString, "tel://\(911)")
+    }
+    
+    func testPatrolCall() {
+        let mockUIApplication = UIApplicationMock()
+        
+        let testInstance = DashboardViewController(uiApplication: mockUIApplication)
+        
+        testInstance.patrolCall(UIButton())
+        
+        XCTAssertEqual(mockUIApplication.theGivenURL?.absoluteString, "tel://\(4097975182)")
+    }
+    
+    func testMissingPersonViewDidLoad() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let missingPersonVC = storyboard.instantiateViewController(withIdentifier: "MissingPersonTableViewController") as! MissingPersonTableViewController
+        _ = missingPersonVC.view
+        
+        XCTAssertTrue(missingPersonVC.isViewLoaded)
+       
+    }
+    
+    func testNotificationsViewDidLoad() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let notificationsVC = storyboard.instantiateViewController(withIdentifier: "NotificationsViewController") as! NotificationsViewController
+        _ = notificationsVC.view
+        
+        XCTAssertTrue(notificationsVC.isViewLoaded)
+    }
+    
+    func testSplashViewControllerViewDidLoad() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let splashVC = storyboard.instantiateViewController(withIdentifier: "SplashViewController")
+        _ = splashVC.view
+        
+        XCTAssertTrue(splashVC.isViewLoaded)
+    }
+
+    
+    func testDisurbanceViewDidLoad() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let disturbanceVC = storyboard.instantiateViewController(withIdentifier: "disturbanceTableViewController") as! disturbanceTableViewController
+        _ = disturbanceVC.view
+        XCTAssertTrue(disturbanceVC.isViewLoaded)
+        
+    }
+    
+    func testOceanHazardViewDidLoad() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let hazardsFormVC = storyboard.instantiateViewController(withIdentifier: "HazardsFormViewController") as! OceanHazardTableViewController
+        _ = hazardsFormVC.view
+        XCTAssertTrue(hazardsFormVC.isViewLoaded)
+        
+    }
+    
+    func testCall911(){
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let dashVC = storyboard.instantiateViewController(withIdentifier: "DashboardViewController") as! BeachGuardian.DashboardViewController
+        _ = dashVC.loadViewIfNeeded()
+        XCTAssertNoThrow(dashVC.call911Button((Any).self))
+    }
+    
+    func testCallDrown(){
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let dashVC = storyboard.instantiateViewController(withIdentifier: "DashboardViewController") as! BeachGuardian.DashboardViewController
+        _ = dashVC.loadViewIfNeeded()
+        let uiButton = UIButton()
+        XCTAssertNoThrow(dashVC.drownCall(uiButton))
+    }
+    
+    func testCallMedical(){
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let dashVC = storyboard.instantiateViewController(withIdentifier: "DashboardViewController") as! BeachGuardian.DashboardViewController
+        _ = dashVC.loadViewIfNeeded()
+        let uiButton = UIButton()
+        XCTAssertNoThrow(dashVC.medicalCall(uiButton))
+    }
+    
+    func testCallPatrol(){
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let dashVC = storyboard.instantiateViewController(withIdentifier: "DashboardViewController") as! BeachGuardian.DashboardViewController
+        _ = dashVC.loadViewIfNeeded()
+        XCTAssertNoThrow(dashVC.patrolCall((Any).self))
+    }
+
+    func testAppDelegate_startNewPasswordRequired_resetPasswordVCNil(){
+        let appDelegate = AppDelegate()
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        appDelegate.storyboard = storyboard
+        _ = appDelegate.inputView
+        let result = appDelegate.startNewPasswordRequired()
+        XCTAssert((result as Any) is AWSCognitoIdentityNewPasswordRequired)
+    }
+}

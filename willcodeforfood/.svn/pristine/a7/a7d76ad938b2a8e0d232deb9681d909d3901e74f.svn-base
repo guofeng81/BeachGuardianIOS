@@ -1,0 +1,15 @@
+//
+//  NotificationsCell.swift
+//  BeachGuardian
+//
+//  Created by Aaron Mitchell on 3/25/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+import UIKit
+
+class NotificationsCell: UITableViewCell {
+    
+    @IBOutlet weak var nameField: UILabel!
+    @IBOutlet weak var timeField: UILabel!
+}

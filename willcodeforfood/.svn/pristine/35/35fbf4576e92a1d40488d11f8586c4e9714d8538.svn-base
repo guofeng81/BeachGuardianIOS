@@ -1,0 +1,11 @@
+pod install
+
+xcodebuild clean build test -workspace BeachGuardian.xcworkspace -scheme BeachGuardian -derivedDataPath build/ -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 8,OS=12.2' -enableCodeCoverage YES -only-testing:BeachGuardianTests
+
+export ERRORLEVEL=$?
+if [ $ERRORLEVEL -ne 0 ]
+then
+  exit $ERRORLEVEL
+fi
+
+slather coverage --html --source-directory BeachGuardian --scheme BeachGuardian --workspace ./BeachGuardian.xcworkspace/ --build-directory build/ --binary-file ./build/Build/Products/Debug-iphonesimulator/BeachGuardian.app/BeachGuardian --input-format profdata ./BeachGuardian.xcodeproj/

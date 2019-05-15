@@ -1,0 +1,96 @@
+//
+//  UtilsTests.swift
+//  BeachGuardianTests
+//
+//  Created by Feng Guo on 3/25/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+import XCTest
+@testable import BeachGuardian
+
+class UtilsTests: XCTestCase {
+
+    var tokenUtils: TokenUtils!
+    var session = MockURLSession()
+    var test: TokenUtils!
+
+    override func setUp()
+    {
+        super.setUp()
+        test = TokenUtils(session: session)
+    }
+
+    func testGetValueFrom()
+    {
+        let txt = UITextField()
+        txt.text = ""
+        XCTAssertEqual(CognitoUtils.getValueFrom(txt),"")
+    }
+
+    func testretrieveTokenDataTask()
+    {
+        let expectedData = "{}".data(using: .utf8)
+
+        session.nextData = expectedData
+
+        var actualData: Data?
+        let url = "http://mockurl"
+        test.retrieveTokenDataTask(url: url){ (data, error) in
+            actualData = data
+        }
+        _ = URL(string: url)
+        XCTAssertNotNil(actualData)
+    }
+
+    func testGetJson()
+    {
+        let token = tokenInfo(token: "123", identity: "321")
+        var called = false
+        let expectation = self.expectation(description: "converting data")
+
+        do{
+            let jsonEncoder = JSONEncoder()
+            let jsonData = try jsonEncoder.encode(token)
+            test.getJson(data: jsonData) { (token, identity, error) in
+                XCTAssertEqual(token,"123")
+                XCTAssertEqual(identity,"321")
+                called = true
+                expectation.fulfill()
+            }
+            waitForExpectations(timeout: 5, handler: nil)
+
+
+        }catch
+        {
+            XCTAssert(false)
+        }
+        XCTAssertTrue(called)
+    }
+
+    func testRetriveTokens()
+    {
+        var called = false
+        let token = tokenInfo(token: "123", identity: "321")
+        let expectation = self.expectation(description: "converting data")
+        do{
+            let jsonEncoder = JSONEncoder()
+            let jsonData = try jsonEncoder.encode(token)
+
+            session.nextData = jsonData
+            let url = "http://mockurl"
+
+            test.retriveTokens(url: url) { (token, identity, error) in
+                XCTAssertEqual(token,"123")
+                XCTAssertEqual(identity,"321")
+                called = true
+                expectation.fulfill()
+            }
+            waitForExpectations(timeout: 5, handler: nil)
+            }catch
+        {
+            XCTAssert(false)
+        }
+        XCTAssert(called)
+    }
+}

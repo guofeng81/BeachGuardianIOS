@@ -1,0 +1,197 @@
+import UIKit
+
+class NotificationsViewController: UIViewController {
+    
+    @IBOutlet weak var recentButton: UIButton!
+    @IBOutlet weak var closestButton: UIButton!
+    @IBOutlet weak var closedButton: UIButton!
+    @IBOutlet weak var allButton: UIButton!
+    @IBOutlet weak var fifteenMinuteButton: UIButton!
+    @IBOutlet weak var thirtyMinuteButton: UIButton!
+    @IBOutlet weak var oneHourButton: UIButton!
+    @IBOutlet weak var twoHourButton: UIButton!
+    @IBOutlet weak var fourHourPlusButton: UIButton!
+    @IBOutlet weak var notificationsTable: UITableView!
+    
+    static let SelectedButton_font: UIFont = UIFont.boldSystemFont(ofSize: 30)
+    static let DeselectedButton_font: UIFont = UIFont.systemFont(ofSize: 28)
+    static let SelectedTime_font: UIFont = UIFont.boldSystemFont(ofSize: 25)
+    static let DeselectedTime_font: UIFont = UIFont.systemFont(ofSize: 25)
+    
+    let searchController = UISearchController(searchResultsController: nil)
+    var dispatcher: AsyncProtocol = DispatchQueue.main
+    var personArray: [personInfo] = []
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        notificationsTable.dataSource = self
+        
+        let dataFromDB = DataFromDB()
+        let url = dataFromDB.getGETURL(varInRoute: "open-cases")
+        
+        dataFromDB.getAndConvertData(url: url){result in
+            self.personArray = result
+            
+            self.dispatcher.async{
+                self.notificationsTable.reloadData()            }
+        }
+        
+        recentButton.tag = 1
+        closestButton.tag = 2
+        closedButton.tag = 3
+        allButton.tag = 4
+        fifteenMinuteButton.tag = 5
+        thirtyMinuteButton.tag = 6
+        oneHourButton.tag = 7
+        twoHourButton.tag = 8
+        fourHourPlusButton.tag = 9
+        
+        recentButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 30)
+        allButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 25)
+        
+        notificationsTable.rowHeight = 100
+        
+        configureSearchBar()
+    }
+    
+    func configureSearchBar() {
+        
+        let offset = CGPoint(x: 0, y: 60)
+        notificationsTable.setContentOffset(offset, animated: false)
+        
+        notificationsTable.tableHeaderView = searchController.searchBar
+    }
+    
+    func filter_timeframe_deselect() {
+        for eachButton in [recentButton, closestButton, closedButton] {
+            eachButton!.titleLabel!.font = NotificationsViewController.DeselectedButton_font
+        }
+    }
+    
+    func filter_timeframe(tag: Int) {
+        switch(tag){
+        case 1:
+            filter_timeframe_deselect()
+            recentButton.titleLabel?.font = NotificationsViewController.SelectedButton_font
+            break
+            
+        case 2:
+            filter_timeframe_deselect()
+            closestButton.titleLabel?.font = NotificationsViewController.SelectedButton_font
+            break
+            
+        case 3:
+            filter_timeframe_deselect()
+            closedButton.titleLabel?.font = NotificationsViewController.SelectedButton_font
+            break
+            
+        default:
+            filter_timeframe_deselect()
+            break
+            
+        }
+    }
+    
+    @IBAction func filter_timeframe_action(_ sender: UIButton) {
+        filter_timeframe(tag: sender.tag)
+    }
+    
+    func filter_time_deselect() {
+        for eachButton in [allButton, fifteenMinuteButton, thirtyMinuteButton, oneHourButton, twoHourButton, fourHourPlusButton] {
+            eachButton!.titleLabel!.font = NotificationsViewController.DeselectedTime_font
+        }
+    }
+    
+    func filter_time(tag: Int) {
+        switch(tag){
+        case 4:
+            filter_time_deselect()
+            allButton.titleLabel?.font = NotificationsViewController.SelectedTime_font
+            break
+            
+        case 5:
+            filter_time_deselect()
+            fifteenMinuteButton.titleLabel?.font = NotificationsViewController.SelectedTime_font
+            break
+            
+        case 6:
+            filter_time_deselect()
+            thirtyMinuteButton.titleLabel?.font = NotificationsViewController.SelectedTime_font
+            break
+            
+        case 7:
+            filter_time_deselect()
+            oneHourButton.titleLabel?.font = NotificationsViewController.SelectedTime_font
+            break
+            
+        case 8:
+            filter_time_deselect()
+            twoHourButton.titleLabel?.font = NotificationsViewController.SelectedTime_font
+            break
+            
+        case 9:
+            filter_time_deselect()
+            fourHourPlusButton.titleLabel?.font = NotificationsViewController.SelectedTime_font
+            break
+            
+        default:
+            filter_time_deselect()
+            break
+        }
+    }
+    
+    @IBAction func filter_time_action(_ sender: UIButton) {
+        filter_time(tag: sender.tag)
+    }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "MissingStatusSegue" {
+            
+            if let vc = segue.destination as? MissingStatusTableViewController, let ip = notificationsTable.indexPathForSelectedRow {
+                dispatcher.async {
+                    let fullName: String = self.personArray[ip.row].missingFirstName + " " + self.personArray[ip.row].missingLastName
+                    vc.setLabels(value: self.personArray[ip.row].reportedBy, label: vc.reporterLabel)
+                    vc.setLabels(value: fullName, label: vc.missingPersonNameLabel)
+                    vc.setLabels(value: self.personArray[ip.row].age, label: vc.ageLabel)
+                    vc.setLabels(value: self.personArray[ip.row].ethnicity, label: vc.ethnicityLabel)
+                    vc.setLabels(value: self.personArray[ip.row].gender, label: vc.genderLabel)
+                    vc.setLabels(value: self.personArray[ip.row].hairColor, label: vc.hairColorLabel)
+                    vc.setLabels(value: self.personArray[ip.row].clothing, label: vc.clothingLabel)
+                    vc.setLabels(value: self.personArray[ip.row].lastTimeSeenFormatted, label: vc.lastSeenLabel1)
+                    vc.setLocationLabel(closestTower: self.personArray[ip.row].closestTower, directionFromTower: self.personArray[ip.row].directionFromTower, locationOnBeach: self.personArray[ip.row].lastLocation, label: vc.locationLabel)
+                    vc.setSummaryLabel(label: vc.summaryLabel)
+                }
+            }
+        }
+    }
+}
+
+extension NotificationsViewController: UITableViewDataSource {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return personArray.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath) as! NotificationsCell
+        
+        cell.nameField.text = "\(personArray[indexPath.row].missingFirstName)" + " " + "\(personArray[indexPath.row].missingLastName)"
+        
+        cell.timeField.text = "\(personArray[indexPath.row].lastTimeSeenFormatted)"
+        cell.accessoryType = .disclosureIndicator
+        
+        return cell
+    }
+    
+}
+
+
+extension NotificationsViewController: UITableViewDelegate {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        performSegue(withIdentifier: "MissingStatusSegue", sender: nil)
+        
+    }
+//    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+//        return 100
+//    }
+}

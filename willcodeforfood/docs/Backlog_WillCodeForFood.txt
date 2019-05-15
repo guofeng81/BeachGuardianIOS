@@ -1,0 +1,68 @@
+-------------
+|Iteration 1|
+-------------
+UI
+Create a dashboard page (and contents)
+Improve filing of reports UX experience (sponsor's suggestion)
+Create NavBar template
+Build Chat Page
+CHAT+LOGIN
+Add Login with Federated Identities available
+Add Twillio functionalities to ChatPage
+DB
+Connect app to EB and RDS 
+Design Database Models
+
+-------------------------------------------------------------------
+------------------
+| Entire Backlog |
+------------------
+UI Backlog
+Create a Login Page
+Create a dashboard page
+Create a  Missing Persons Reports form
+Create an Ocean Hazard Reports form
+Create Marine Mammal Reports form
+Create a report summary/check page template
+Create a User Page
+Create a NotificationsPage
+Create Add Pictures Page
+Create MissingPerson locations Page
+Build Chat Page
+Propose UI designs and theme to sponsor
+Create NavBar template
+Improve filing of reports UX experience (sponsor's suggestion)
+
+Login+Chat Backlog
+Implement Firebase cloud functions for push notifications
+Add Twillio functionalities to ChatPage
+Add Login with Federated Identities available
+Work with DB Team to fetch or add user login data to DB
+
+DB Backlog
+Design Database models
+Write DB presenters
+Write DB functions
+Write S3 connectors for application
+Connect app to EB and RDS
+Create IAM user-groups
+Add city, beach locations table for requests for city and beach
+
+-------------------------------------------------------------------
+--------------------------------------------
+|Additional Features to check with sponsor:|
+--------------------------------------------
+Create MissingPersons bounty-board
+Create Safety Guidelines/advices page
+Create Emergency first-aid page
+Create an About page
+Add Drawer Functionality
+Add a Beach Map page
+
+
+Quick Response + GuardsOnDuty chat
+Option to mute chat/block or report (app misuse)
+Responder ETA page (make use of firebase and locations)
+
+Make the application available to any beach and any team
+Provide and Store beach map

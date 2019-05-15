@@ -1,0 +1,11 @@
+import Foundation
+import AWSCognitoIdentityProvider
+
+let CognitoIdentityUserPoolRegion: AWSRegionType = .USEast2
+let CognitoIdentityUserPoolId = "us-east-2_kW7zFhIN8"
+let CognitoIdentityUserPoolAppClientId = "7scgvfguogkveqkj688icdi0lo"
+let CognitoIdentityUserPoolAppClientSecret = "1oh9u2t6pt5v8krucmn95jhrn8q12h84mcukek16c12ubjudgv99"
+let AWSCognitoUserPoolsSignInProviderKey = "UserPool"
+
+
+let TwilioAPIRequestURL = "https://crimson-mastiff-6542.twil.io/chat-token"

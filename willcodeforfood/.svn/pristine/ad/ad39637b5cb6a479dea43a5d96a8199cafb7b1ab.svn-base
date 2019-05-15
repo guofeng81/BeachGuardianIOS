@@ -1,0 +1,170 @@
+import UIKit
+import AWSCognitoIdentityProvider
+
+class NewPasswordViewController: UIViewController, UITextFieldDelegate {
+    
+    @IBOutlet weak var eMailAddress: UITextField!
+    @IBOutlet weak var PhoneNumber: UITextField!
+    @IBOutlet weak var FirstName: UITextField!
+    @IBOutlet weak var LastName: UITextField!
+    @IBOutlet weak var NewPassword: UITextField!
+    @IBOutlet weak var ConfirmNewPassword: UITextField!
+    @IBOutlet weak var submitButton: UIButton!
+    
+    var pass_userName: String?
+    var pass_phoneNumber: String?
+    var currentUserAttributes:[String:String]?
+    var alert: UIAlertController?
+    var resetPasswordCompletion: AWSTaskCompletionSource<AWSCognitoIdentityNewPasswordRequiredDetails>?
+    var cognitoRequirements: [String]?
+    var dispatcher: AsyncProtocol? = DispatchQueue.main
+
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        self.eMailAddress.delegate = self
+        self.NewPassword.delegate = self
+        self.ConfirmNewPassword.delegate = self
+        self.FirstName.delegate = self
+        self.LastName.delegate = self
+        self.PhoneNumber.delegate = self
+        self.eMailAddress?.text = currentUserAttributes?["email"]
+        self.PhoneNumber?.text = currentUserAttributes?["phone_number"]
+        self.cognitoRequirements = ["email", "family_name", "phone_number", "given_name", "custom:roleID"]
+    }
+    
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.resignFirstResponder()
+        return false
+    }
+    
+    @IBAction func SubmitNewPassword(_ sender: Any) {
+        _ = self.submit()
+    }
+    
+    func submit() -> Bool{
+        var attributes: [String:String] = [:]
+        
+        let firstName = CognitoUtils.getValueFrom(FirstName)
+        let lastName = CognitoUtils.getValueFrom(LastName)
+        let eMail = CognitoUtils.getValueFrom(eMailAddress)
+        let phoneNumber = CognitoUtils.getValueFrom(PhoneNumber)
+        
+        attributes["given_name"] = firstName
+        attributes["family_name"] = lastName
+        attributes["phone_number"] = phoneNumber
+        attributes["email"] = eMail
+        attributes["custom:roleID"] = "0"
+
+        let newPassword = CognitoUtils.getValueFrom(NewPassword)
+        let confirm = CognitoUtils.getValueFrom(ConfirmNewPassword)
+        
+        if (!isComplete(attributes: attributes)) {
+            
+            alert = AlertProvider.forCognitoSignUp(errType: "MissingRequiredAttributes")
+            present(alert!, animated: false, completion: nil)
+            
+        } else if (!validate(attributes: attributes)) {
+            
+            alert = AlertProvider.forCognitoSignUp(errType: "InvalidFormatFound")
+            present(alert!, animated: false, completion: nil)
+            
+        } else if (newPassword != confirm) {
+            
+            self.alert = AlertProvider.forCognitoSignUp(errType: "PasswordDoesNotMatch")
+            present(alert!, animated: false, completion: nil)
+            
+            
+        } else if(!validate(password: newPassword)) {
+            
+            alert = AlertProvider.forCognitoSignUp(errType: "PasswordDoesNotMeetRequirements")
+            present(alert!, animated: false, completion: nil)
+            
+        } else {
+            
+            let password = AWSCognitoIdentityNewPasswordRequiredDetails(proposedPassword: newPassword, userAttributes: attributes)
+            let result = self.resetPasswordCompletion?.trySet(result: password)
+            return result!
+        }
+        return false
+    }
+    
+    func isComplete(attributes: [String:String]) -> Bool {
+        
+        for eachRequiredKey in cognitoRequirements! {
+            if !attributes.keys.contains(eachRequiredKey) {
+                return false
+            }
+        }
+        return true
+    }
+    
+    func validate(attributes: [String:String]) -> Bool {
+        let email_regex = "[A-Za-z0-9._!@#$%\\-<>?,]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+        let phone_regex = "\\+[0-9]+[0-9]{10,}"
+        let roleID_regex = "[0-4]{1,}"
+        let name_regex = "[a-zA-Z]+"
+        
+        let testEmail = NSPredicate(format: "SELF MATCHES %@", email_regex)
+        let testPhone = NSPredicate(format: "SELF MATCHES %@", phone_regex)
+        let testRole = NSPredicate(format: "SELF MATCHES %@", roleID_regex)
+        let testName = NSPredicate(format: "SELF MATCHES %@", name_regex)
+
+        for eachKey in attributes.keys {
+            if(eachKey == "email") {
+                
+                if(!testEmail.evaluate(with: attributes[eachKey])) {
+                    return false
+                }
+                
+            } else if (eachKey == "phone_number") {
+                
+                if (!testPhone.evaluate(with: attributes[eachKey])) {
+                    return false
+                }
+                
+            } else if (eachKey == "custom:roleID") {
+                
+                if (!testRole.evaluate(with: attributes[eachKey])) {
+                    return false
+                }
+                
+            } else if (eachKey == "given_name" || eachKey == "family_name") {
+                
+                if (!testName.evaluate(with: attributes[eachKey])) {
+                    return false
+                }
+            }
+        }
+        return true
+    }
+    
+    func validate(password: String) -> Bool {
+        let password_regex = "(?=.*[A-Z])(?=.*[!?@#$&*])(?=.*[0-9])(?=.*[a-z]).{8,99}"
+        let test = NSPredicate(format: "SELF MATCHES %@", password_regex)
+        return test.evaluate(with: password)
+    }
+}
+
+extension NewPasswordViewController: AWSCognitoIdentityNewPasswordRequired {
+    func getNewPasswordDetails(_ newPasswordRequiredInput: AWSCognitoIdentityNewPasswordRequiredInput, newPasswordRequiredCompletionSource: AWSTaskCompletionSource<AWSCognitoIdentityNewPasswordRequiredDetails>){
+        self.resetPasswordCompletion = newPasswordRequiredCompletionSource
+        self.currentUserAttributes = newPasswordRequiredInput.userAttributes
+    }
+    
+    func didCompleteNewPasswordStepWithError(_ error: Error?) {
+        dispatcher?.async {
+            if let specificError = error as NSError? {
+                let errType = specificError.userInfo["__type"] as! String
+                self.alert = AlertProvider.forCognitoSignIn(errType: errType)
+                self.present(self.alert!, animated: true, completion:  nil)
+            } else {
+                self.NewPassword.text = nil
+                self.ConfirmNewPassword.text = nil
+                self.dismiss(animated: true, completion: nil)
+            }
+        }
+
+    }
+    
+}

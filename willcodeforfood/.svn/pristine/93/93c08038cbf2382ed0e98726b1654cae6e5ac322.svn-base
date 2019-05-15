@@ -1,0 +1,23 @@
+platform :ios, '9.0'
+use_frameworks!
+
+target 'BeachGuardian' do
+  pod 'AWSMobileClient'
+  pod 'AWSCore'
+  pod 'AWSCognitoIdentityProvider'
+  pod 'TwilioChatClient'
+  pod 'TwilioAccessManager'
+  pod 'AWSS3'
+  pod 'RadioButton'
+  pod 'MockUIAlertController', '~> 3.0'
+
+target 'BeachGuardianTests' do
+  inherit! :search_paths
+end
+
+target 'BeachGuardianUITests' do
+  inherit! :search_paths
+end
+
+
+end

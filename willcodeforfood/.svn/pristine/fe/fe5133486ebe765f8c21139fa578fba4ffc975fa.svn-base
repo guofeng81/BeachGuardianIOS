@@ -1,0 +1,100 @@
+import XCTest
+import AWSCognitoIdentityProvider
+@testable import BeachGuardian
+
+class SignInTests: XCTestCase {
+    var signInViewController: BeachGuardian.SignInViewController!
+    var result: Bool = false
+    
+    override func setUp() {
+        let storyboard: UIStoryboard =  UIStoryboard(name: "Main", bundle: nil)
+        let viewController = storyboard.instantiateViewController(withIdentifier: "signInController")
+        signInViewController = viewController as? SignInViewController
+        signInViewController.loadViewIfNeeded()
+    }
+    
+    func test_if_signInViewController_HasBeenLoaded(){
+        XCTAssertTrue(signInViewController.isViewLoaded)
+    }
+    
+    func testLoginViewTapped() {
+        self.signInViewController.loginViewTapped()
+        XCTAssertTrue((self.signInViewController.view?.endEditing(true))!)
+    }
+    
+    func test_if_signInFieldValuesAreProcessed(){
+        signInViewController.usernameTextField.text = "summer@wcff.com"
+        signInViewController.passwordTextField.text = "@wcFF123"
+        result = signInViewController.signIn()
+        XCTAssertFalse(result, "passwordAuthenticationCompletion has not been initialized to hold the credentials")
+        
+        
+        signInViewController.passwordAuthenticationCompletion = AWSTaskCompletionSource<AWSCognitoIdentityPasswordAuthenticationDetails>.init()
+        
+        signInViewController.usernameTextField.text = "summer@wcff.com"
+        signInViewController.passwordTextField.text = "@wcFF123"
+        result = signInViewController.signIn()
+        XCTAssertTrue(result, "SignIn should take in these credentials.")
+    }
+    
+    func test_if_signInAction_isConnectedTo_SignIn(){
+        signInViewController.passwordAuthenticationCompletion = AWSTaskCompletionSource<AWSCognitoIdentityPasswordAuthenticationDetails>.init()
+        signInViewController.usernameTextField.text = "summer@wcff.com"
+        signInViewController.passwordTextField.text = "@wcFF123"
+        signInViewController.signInBtn(signInViewController.signInButton)
+        let string = signInViewController.passwordAuthenticationCompletion?.task.result?.username ?? ""
+        XCTAssertEqual("summer@wcff.com", string, "\(string)")
+    }
+    
+    func test_if_getDetails_setsUsername_correctly(){
+        let completionSource = AWSTaskCompletionSource<AWSCognitoIdentityPasswordAuthenticationDetails>.init()
+        let mock = AsyncMock()
+        signInViewController.dispatchQueue = mock
+        signInViewController.getDetails(mockinput.init(), passwordAuthenticationCompletionSource: completionSource)
+        
+        mock.container()
+        XCTAssertEqual(signInViewController.usernameText, "beach@wcff.com")
+    }
+    
+    func test_if_didComplete_displaysError(){
+        let err: NSError = NSError.init(domain: "cognito", code: 14, userInfo: ["__type": "InvalidParameterException"])
+        
+        let mock = AsyncMock()
+        signInViewController.dispatchQueue = mock
+        signInViewController.didCompleteStepWithError(err)
+        
+        mock.container()
+        XCTAssertEqual(self.signInViewController.nativeAlertController.message, AlertProvider.emptyAuth)
+    }
+    
+    func test_if_didComplete_displaySuccess(){
+        self.signInViewController.usernameTextField.text = "user@email.com"
+        
+        let mock = AsyncMock()
+        signInViewController.dispatchQueue = mock
+        signInViewController.didCompleteStepWithError(nil)
+        
+        mock.container()
+        XCTAssertEqual(self.signInViewController.usernameTextField.text, "")
+    }
+
+}
+
+
+class mockinput: AWSCognitoIdentityPasswordAuthenticationInput{
+    override var lastKnownUsername: String? {
+        set{
+            self.lastKnownUsername = "beach@wcff.com"
+        }
+        get {
+            return "beach@wcff.com"
+        }
+    }
+}
+
+class AsyncMock : AsyncProtocol {
+    var container: ()-> Void = {}
+    func async(execute work: @escaping @convention(block) () -> Void) {
+        container = work
+    }
+}

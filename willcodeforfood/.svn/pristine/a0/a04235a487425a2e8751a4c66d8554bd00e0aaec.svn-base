@@ -1,0 +1,51 @@
+//
+//  ChannelsViewController.swift
+//  BeachGuardian
+//
+//  Created by Feng Guo on 3/20/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+import UIKit
+
+class ChannelsViewController: UIViewController,UITableViewDelegate {
+
+    
+    let channels = ["Open Channels","Group Channels"]
+    let channelImages = ["OpenChannel","PrivateChat"]
+    
+    @IBOutlet var channelsTableView: UITableView!
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+    }
+}
+extension ChannelsViewController:UITableViewDataSource {
+    
+    func numberOfSections(in tableView: UITableView) -> Int {
+        return 1
+    }
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return channels.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        
+        let cell = tableView.dequeueReusableCell(withIdentifier: "channelCell", for: indexPath) as! OpenChannelTableViewCell
+        cell.channelName.text = channels[indexPath.row]
+        cell.channelImage.image = UIImage(named: channelImages[indexPath.row])
+        
+        return cell
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        if channels[indexPath.row] == "Open Channels" {
+            performSegue(withIdentifier: "goToOpen", sender: self)
+        }
+    }
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 100
+    }
+    
+}

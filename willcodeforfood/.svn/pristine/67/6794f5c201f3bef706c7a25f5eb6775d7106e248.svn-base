@@ -1,0 +1,185 @@
+import XCTest
+import AWSCognitoIdentityProvider
+@testable import BeachGuardian
+
+class NewPasswordTests: XCTestCase {
+    
+    var newPasswordViewController: BeachGuardian.NewPasswordViewController!
+    var result: Bool = false
+    
+    override func setUp() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let viewController = storyboard.instantiateViewController(withIdentifier: "resetPasswordController")
+        newPasswordViewController = viewController as? BeachGuardian.NewPasswordViewController
+        newPasswordViewController.loadViewIfNeeded()
+    }
+    
+    func test_if_textFieldReturns(){
+        newPasswordViewController.NewPassword.becomeFirstResponder()
+        var need_closing = true
+        need_closing = newPasswordViewController.textFieldShouldReturn(newPasswordViewController.NewPassword)
+        XCTAssertFalse(need_closing)
+    }
+    
+    func test_if_ViewController_HasBeenLoaded(){
+        XCTAssertTrue(newPasswordViewController.isViewLoaded)
+    }
+    
+    func test_passwordValidation(){
+        let isValid: Bool = newPasswordViewController.validate(password: "@wcFF123")
+        XCTAssertTrue(isValid)
+    }
+    
+    func test_if_didComplete_displaysError_forNewpassword(){
+        let err: NSError = NSError.init(domain: "cognito", code: 14, userInfo: ["__type": "InvalidParameterException"])
+        
+        let mock = AsyncMock()
+        newPasswordViewController.dispatcher = mock
+        newPasswordViewController.didCompleteNewPasswordStepWithError(err)
+        
+        mock.container()
+        XCTAssertEqual(newPasswordViewController.alert?.message, AlertProvider.emptyAuth)
+    }
+    
+    func test_if_didComplete_succeeds_forNewPassword(){
+        
+        let mock = AsyncMock()
+        newPasswordViewController.dispatcher = mock
+        newPasswordViewController.NewPassword.text = "password123"
+        newPasswordViewController.didCompleteNewPasswordStepWithError(nil)
+        
+        mock.container()
+        XCTAssertEqual(newPasswordViewController.NewPassword.text, "")
+    }
+    
+    func test_if_attributes_are_incomplete(){
+        var attributes: [String:String] = [:]
+        XCTAssertFalse(newPasswordViewController.isComplete(attributes: attributes), "Checking if attributes in code is not missing some required attribute for Cognito. Or if an attribute is suddenly missing.")
+        attributes["email"] = "summer@wcff.com"
+        XCTAssertFalse(newPasswordViewController.isComplete(attributes: attributes))
+        attributes["phone_number"] = "+017131231234"
+        XCTAssertFalse(newPasswordViewController.isComplete(attributes: attributes))
+        attributes["given_name"] = "Summer"
+        XCTAssertFalse(newPasswordViewController.isComplete(attributes: attributes))
+        attributes["family_name"] = "McGuardian"
+        XCTAssertFalse(newPasswordViewController.isComplete(attributes: attributes))
+        attributes["custom:roleID"] = "0"
+        XCTAssertTrue(newPasswordViewController.isComplete(attributes: attributes))
+    }
+
+    func test_if_newPasswordFieldValuesAreProcessed_after_submit() {
+        newPasswordViewController.resetPasswordCompletion = AWSTaskCompletionSource<AWSCognitoIdentityNewPasswordRequiredDetails>.init()
+        
+        newPasswordViewController.FirstName.text = "Simple"
+        newPasswordViewController.LastName.text = "User"
+        newPasswordViewController.eMailAddress.text = "simple@email.com"
+        newPasswordViewController.PhoneNumber.text = "+018322341234"
+        newPasswordViewController.NewPassword.text = "@wcFF123"
+        newPasswordViewController.ConfirmNewPassword.text = "@wcFF123"
+        result = newPasswordViewController.submit()
+        XCTAssertTrue(result, "NewPasswordSubmitted. Processing new password details. Note: resetPasswordCompletion must be initialized. This is normally done in the extension getPasswordDetails")
+    }
+    
+    func test_if_attributeValidation_worksFor_email(){
+        var attributes: [String: String] = [:]
+        
+        attributes["email"] = ""
+        result = newPasswordViewController.validate(attributes: attributes)
+        XCTAssertFalse(result, "Validating attributes: Invalid email must be found. This method assumes key attributes exist with isComplete called BEFORE.")
+        
+        attributes["email"] = "summer@gmail.com"
+        result = newPasswordViewController.validate(attributes: attributes)
+        XCTAssertTrue(result, "Validating attributes: Valid email must be found. This method assumes key attributes exist with isComplete called BEFORE.")
+        
+    }
+    
+    func test_if_attributeValidation_worksFor_phoneNumber(){
+        var attributes: [String: String] = [:]
+        
+        attributes["phone_number"] = "713123123"
+        result = newPasswordViewController.validate(attributes: attributes)
+        XCTAssertFalse(result, "Validating attributes: Invalid phone number must be found. This method assumes key attributes exist with isComplete called BEFORE.")
+        
+        attributes["phone_number"] = "+017131231234"
+        result = newPasswordViewController.validate(attributes: attributes)
+        XCTAssertTrue(result, "Validating attributes: Valid phone_number must be found. This method assumes key attributes exist with isComplete called BEFORE.")
+        
+    }
+    
+    func test_if_attributeValidation_worksFor_roleID(){
+        var attributes: [String: String] = [:]
+        
+        attributes["custom:roleID"] = "5"
+        result = newPasswordViewController.validate(attributes: attributes)
+        XCTAssertFalse(result, "Validating attributes: Invalid roleID must be found. This method assumes key attributes exist with isComplete called BEFORE.")
+        
+        attributes["custom:roleID"] = "4"
+        result = newPasswordViewController.validate(attributes: attributes)
+        XCTAssertTrue(result, "Validating attributes: Valid roleID must be found. This method assumes key attributes exist with isComplete called BEFORE.")
+    }
+    
+    func test_if_attributeValidation_worksFor_naming(){
+        var attributes: [String: String] = [:]
+        
+        attributes["given_name"] = ""
+        attributes["family_name"] = ""
+        result = newPasswordViewController.validate(attributes: attributes)
+        XCTAssertFalse(result, "Validating attributes: Invalid names must be found. This method assumes key attributes exist with isComplete called BEFORE.")
+        
+        attributes["given_name"] = "Javed"
+        attributes["family_name"] = "Khan"
+        result = newPasswordViewController.validate(attributes: attributes)
+        XCTAssertTrue(result, "Validating attributes: Valid names must be found. This method assumes key attributes exist with isComplete called BEFORE.")
+    }
+    
+    func test_getNewPasswordDetails(){
+        let taskCompletionSource: AWSTaskCompletionSource<AWSCognitoIdentityNewPasswordRequiredDetails>
+        taskCompletionSource = AWSTaskCompletionSource<AWSCognitoIdentityNewPasswordRequiredDetails>.init()
+        let newPasswordRequiredInput: AWSCognitoIdentityNewPasswordRequiredInput
+        newPasswordRequiredInput = AWSCognitoIdentityNewPasswordRequiredInput.init()
+        let email: String = "email@wcff.com"
+        let number: String = "+17132341234"
+        
+        newPasswordRequiredInput.userAttributes["email"] = email
+        newPasswordRequiredInput.userAttributes["phone_number"] = number
+        
+        newPasswordViewController.getNewPasswordDetails(newPasswordRequiredInput, newPasswordRequiredCompletionSource: taskCompletionSource)
+
+        XCTAssertNotNil(newPasswordViewController.resetPasswordCompletion, "ResetPasswordCompletion must not be nil. (This is used to store the attributes to be sent back for processing)")
+        XCTAssertNotNil(newPasswordViewController.currentUserAttributes, "CurrentUserAttributes (used for passing current registered attributes through Cognito console): must not be nil. This is where it is initialized.")
+    }
+    
+    func test_if_invalidInputValues_produce_alerts_after_submit() {
+        newPasswordViewController.cognitoRequirements = ["email", "family_name", "phone_number", "given_name", "custom:roleID", "sudden_new_requirement"]
+        var message: String
+        
+        newPasswordViewController.FirstName.text = "null"
+        newPasswordViewController.LastName.text = "user"
+        newPasswordViewController.eMailAddress.text = "email.com"
+        newPasswordViewController.PhoneNumber.text = "221"
+        newPasswordViewController.NewPassword.text = "oldwcFF123"
+        newPasswordViewController.ConfirmNewPassword.text = "oldwcFF124"
+        
+        _ = newPasswordViewController.submit()
+        message = AlertProvider.missingRequiredAttribute
+        XCTAssertEqual(newPasswordViewController.alert?.message, message, "Expecting to miss giving a value to a required attribute. Checks if the alert (if any) displayed matches the intended alert")
+        
+        newPasswordViewController.cognitoRequirements = ["email", "family_name", "phone_number", "given_name", "custom:roleID"]
+        _ = newPasswordViewController.submit()
+        message = AlertProvider.invalidRequiredAttribute
+        XCTAssertEqual(newPasswordViewController.alert?.message, message, "Expecting to have invalid email and phonenumber. Checks if the alert (if any) displayed matches the intended alert")
+        
+        newPasswordViewController.eMailAddress.text = "fixed@email.com"
+        newPasswordViewController.PhoneNumber.text = "+012213451234"
+        _ = newPasswordViewController.submit()
+        message = AlertProvider.newPasswordDoesNotMatch
+        XCTAssertEqual(newPasswordViewController.alert?.message, message, "Expecting for passwords to not match. Checks if the alert (if any) displayed matches the intended alert")
+        
+        newPasswordViewController.NewPassword.text = "oldwcFF123"
+        newPasswordViewController.ConfirmNewPassword.text = "oldwcFF123"
+        _ = newPasswordViewController.submit()
+        message = AlertProvider.newPasswordDoesNotMeetRequirements
+        XCTAssertEqual(newPasswordViewController.alert?.message, message, "Expecting to have an invalid password. Checks if the alert (if any) displayed matches the intended alert")
+        
+    }
+}

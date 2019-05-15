@@ -1,0 +1,21 @@
+Description:
+
+iOS application used to help the Galveston lifeguards report and track missing people, chat, and have easy access to pictures and phone functionalities. The app is meant to assist in their biggest problem, which is people going missing
+
+
+Challenges Faced:
+
+Problems with the sponsor: these were resolved by communicating with Chang and the sponsor himself and eventually meeting up. His tardiness while not resolved was worked around the best we could manage
+
+Jenkins: Jenkins provided significant issues and we spent significant time working with it and fixing it
+
+Xcode: We managed our problems with Xcode the best we could
+
+Lack of resources: We had to get creative in dealing with a lack of proper equipment, but it was continually an issue the entire semester
+
+Testing: We are proud of our coverage at this point. While not perfect, we managed to mock the camera and Twilio chat portions as well as Notifications and are at a near perfect percentage with 98% for the app, and 100% for the DB
+
+
+Other:
+
+We learned to rely on each other as a team and I believe our team chemistry can't be matched. We truly came together to deliver a great product despite our large amount of problems. I couldn't be happier with everyone on the team

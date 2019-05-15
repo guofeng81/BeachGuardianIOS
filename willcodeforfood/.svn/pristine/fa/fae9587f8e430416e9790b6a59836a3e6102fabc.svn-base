@@ -1,0 +1,240 @@
+//
+//  MarineAnimalTests.swift
+//  BeachGuardianTests
+//
+//  Created by sanaz farhadi on 4/19/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+import UIKit
+import XCTest
+import AWSS3
+@testable import BeachGuardian
+
+class MarineAnimalTests: XCTestCase {
+
+    var marineAnimalFormVC : BeachGuardian.MarineAnimalsFormTableViewController!
+    var picker = UIPickerView()
+    var slider = UISlider()
+    var meInDangerYes = UIButton()
+    var meInDangerNo = UIButton()
+    var othersInDangerYes = UIButton()
+    var othersInDangerNo = UIButton()
+    var uploadPhoto = UIButton()
+    var takePhoto = UIButton()
+    var submit = UIButton()
+    var CallButton = UIButton()
+    var tapGesture = UITapGestureRecognizer()
+    var textBox = UITextView()
+    
+    override func setUp() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let vc = storyboard.instantiateViewController(withIdentifier: "MarineAnimalsFormTableViewController") as! MarineAnimalsFormTableViewController
+        marineAnimalFormVC = vc as MarineAnimalsFormTableViewController
+        marineAnimalFormVC.loadViewIfNeeded()
+        
+        picker = marineAnimalFormVC.AnimalPicker
+        slider = marineAnimalFormVC.TowerSlider
+        slider.value = 5.0
+        meInDangerYes = marineAnimalFormVC.CellTwoYES
+        meInDangerNo = marineAnimalFormVC.CellTwoNO
+        othersInDangerYes = marineAnimalFormVC.CellThreeYES
+        othersInDangerNo = marineAnimalFormVC.CellThreeNO
+        tapGesture = marineAnimalFormVC.viewTapGestureRec
+        textBox = marineAnimalFormVC.textView
+        textBox.text = "test"
+        
+    }
+    
+    func testMarineAimalsFormViewDidLoad() {
+        XCTAssertTrue(marineAnimalFormVC.isViewLoaded)
+    }
+    
+    func testNumberPickerSections() {
+        XCTAssertEqual(marineAnimalFormVC.numberOfSections(in: marineAnimalFormVC.tableView), 1)
+        XCTAssertEqual(marineAnimalFormVC.tableView(marineAnimalFormVC.tableView, numberOfRowsInSection: 6), 6)
+    }
+    
+    func testNumberOfComponents() {
+        XCTAssertEqual(marineAnimalFormVC.numberOfComponents(in: picker), 1)
+    }
+    
+    func testPickerLoadsValues() {
+        XCTAssertEqual(marineAnimalFormVC.pickerView(picker, titleForRow: 0, forComponent: 0), "Jelly Fish/Medusa")
+    }
+    
+    func testNumberPickerRows() {
+        XCTAssertEqual(marineAnimalFormVC.pickerView(picker, numberOfRowsInComponent: 1), 6)
+    }
+    
+    func testTextBoxValues() {
+        marineAnimalFormVC.textViewDidEndEditing(textBox)
+        XCTAssertEqual(textBox.text!, marineAnimalFormVC.additionalInfo)
+    }
+    
+    func testFormButtons() {
+        
+        marineAnimalFormVC.IAmInDanger(meInDangerYes)
+        XCTAssertTrue(marineAnimalFormVC.UInDanger)
+        
+        marineAnimalFormVC.IAmNOTInDanger(meInDangerNo)
+        XCTAssertFalse(marineAnimalFormVC.UInDanger)
+        
+        marineAnimalFormVC.IAmInDanger(meInDangerYes)
+        XCTAssertTrue(marineAnimalFormVC.UInDanger)
+        
+        marineAnimalFormVC.OthersInDanger(othersInDangerYes)
+        XCTAssertTrue(marineAnimalFormVC.othersInDanger)
+        
+        marineAnimalFormVC.OthersNOTInDanger(othersInDangerNo)
+        XCTAssertFalse(marineAnimalFormVC.othersInDanger)
+        
+        marineAnimalFormVC.OthersInDanger(othersInDangerYes)
+        XCTAssertTrue(marineAnimalFormVC.othersInDanger)
+        
+    }
+    
+    func testPickerStoresValues() {
+        marineAnimalFormVC.pickerView(picker, didSelectRow: 0, inComponent: 1)
+        XCTAssertEqual(marineAnimalFormVC.selectedAnimal, "Jelly Fish/Medusa")
+    }
+    
+    func testSliderValue() {
+        slider.value = 6.0
+        marineAnimalFormVC.SliderValueChanged(slider)
+        XCTAssertEqual(marineAnimalFormVC.sliderValue, 6)
+        XCTAssertEqual(marineAnimalFormVC.TowerLabel.text, "6")
+    }
+    
+    func testTapRecognizer() {
+        XCTAssertNotNil(marineAnimalFormVC.tap(recognizer: tapGesture))
+        
+        marineAnimalFormVC.textViewDidBeginEditing(textBox)
+        XCTAssertEqual(textBox.textColor, .black)
+        XCTAssertTrue(marineAnimalFormVC.textView(textBox, shouldChangeTextIn: NSMakeRange(0,200), replacementText: (textBox.text)!))
+    }
+    
+    func testProcessDisturbanceRequestSuccess(){
+        marineAnimalFormVC.s3Url = (URL(string: "https://s3.console.aws.amazon.com/s3/object/"))
+        let imageToTest = UIImage(named: "camera2")
+        let fileName = "missing.png"
+        let fileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
+        let key = ProcessInfo.processInfo.globallyUniqueString + ".png"
+        let imageData = imageToTest?.jpegData(compressionQuality: 1.0)
+        do
+        {
+            try imageData!.write(to: fileURL, options: [.atomic])
+        }
+        catch{}
+        let transferUtility = AWSS3TransferUtility.default()
+        _ = marineAnimalFormVC.processRequest(transferUtility: transferUtility, key: key, fileURL: fileURL){task in
+            XCTAssertEqual(self.marineAnimalFormVC.s3Error, false)
+        }
+    }
+    
+    func testProcessDisturbanceRequestFailure(){
+        self.marineAnimalFormVC.s3Url = (URL(string: "https://s3.console.aws.amazon.com/s3/object/"))
+        let imageToTest = UIImage(named: "camera2")
+        let fileName = "missing.png"
+        let fileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
+        let key = ProcessInfo.processInfo.globallyUniqueString + ".png"
+        let imageData = imageToTest?.jpegData(compressionQuality: 1.0)
+        do
+        {
+            try imageData!.write(to: fileURL, options: [.atomic])
+        }
+        catch{}
+        let transferUtility = AWSS3TransferUtility.default()
+        _ = self.marineAnimalFormVC.processRequest(transferUtility: transferUtility, key: key, fileURL: URL(string: "failure")!){task in
+        }
+        XCTAssertEqual(self.marineAnimalFormVC.s3Error, true)
+    }
+    
+    func testEmptyDictionaryImagePickerController(){
+        let imagePickerController = UIImagePickerController()
+        let emptyDictionary = [UIImagePickerController.InfoKey: Any]()
+        marineAnimalFormVC.imagePickerController(imagePickerController, didFinishPickingMediaWithInfo: emptyDictionary)
+        XCTAssertNil(marineAnimalFormVC.marineAnimalsImage.image)
+    }
+    
+    func testImagePickerController(){
+        var nonEmptyDictionary = [UIImagePickerController.InfoKey: Any]()
+        nonEmptyDictionary[UIImagePickerController.InfoKey.originalImage] = UIImage(named: "camera2")
+        let imagePickerController = UIImagePickerController()
+        marineAnimalFormVC.imagePickerController(imagePickerController, didFinishPickingMediaWithInfo: nonEmptyDictionary)
+        XCTAssertNotNil(marineAnimalFormVC.marineAnimalsImage.image)
+    }
+    
+    func testUploadPhoto(){
+        let uiImageViewMock = UIImageViewMock()
+        uiImageViewMock._image = UIImage(named: "camera2")
+        marineAnimalFormVC.marineAnimalsImage = uiImageViewMock
+        XCTAssertNotNil(marineAnimalFormVC.submitReportUsingPhoto(marineAnimalsImage:
+            marineAnimalFormVC.marineAnimalsImage))
+    }
+    
+    func testSubmitAWSPictureWithNoPicture() {
+        let alertVerifier = QCOMockAlertVerifier()
+        marineAnimalFormVC.marineAnimalsImage = nil
+        marineAnimalFormVC.submitReport([])
+        XCTAssertEqual(alertVerifier.title, "No picture chosen")
+    }
+    
+    func testDisplaySubmittedMessage()
+    {
+        let alertVerifier = QCOMockAlertVerifier()
+        marineAnimalFormVC.displaySubmittedMessage()
+        XCTAssertEqual(alertVerifier.title, "Report Submitted")
+    }
+    
+    func test_DismissIndicator_ShowsMessage()
+    {
+        let alertVerifier = QCOMockAlertVerifier()
+        marineAnimalFormVC.dismissAlert()
+        XCTAssertEqual(alertVerifier.title, "Report Submitted")
+    }
+    
+    func test_DisplayNoSubmittedMessage()
+    {
+        let alertVerifier = QCOMockAlertVerifier()
+        marineAnimalFormVC.displayNoPictureMessage()
+        XCTAssertEqual(alertVerifier.title, "No picture chosen")
+    }
+    
+    func testUploadPhotoIBAction(){
+        XCTAssertNoThrow(marineAnimalFormVC.uploadPhoto((Any).self))
+    }
+    
+    func testTakePhotoIBAction(){
+        XCTAssertNoThrow(marineAnimalFormVC.takePhoto((Any).self))
+    }
+    
+    func testSubmitPhoto_GetReportSubmitted(){
+        var imageToTest : UIImageView?
+        let image: UIImage = UIImage(named: "camera2")!
+        imageToTest = UIImageView(image: image)
+        marineAnimalFormVC.marineAnimalsImage.image = image
+        marineAnimalFormVC.submitReportUsingPhoto(marineAnimalsImage: imageToTest )
+        XCTAssertEqual(marineAnimalFormVC.s3Error, false)
+    }
+    
+    func test_OpenPhotoActionPicker_HardwareAvailable()
+    {
+        class MockUIImagePicker : UIImagePickerController
+        {
+            override class func isSourceTypeAvailable(_ sourceType: UIImagePickerController.SourceType) -> Bool {
+                return true
+            }
+        }
+        
+        marineAnimalFormVC.openCamera(serviceProvider: MockUIImagePicker.self)
+        XCTAssertEqual(marineAnimalFormVC.imagePicker.sourceType, UIImagePickerController.SourceType(rawValue: 1)!)
+    }
+    
+    func testMarineAnimalCall() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let marineAnimalFormVC = storyboard.instantiateViewController(withIdentifier: "MarineAnimalsFormTableViewController") as! BeachGuardian.MarineAnimalsFormTableViewController
+        _ = marineAnimalFormVC.loadViewIfNeeded()
+        XCTAssertNoThrow(marineAnimalFormVC.CallMarineAnimalLine(CallButton))
+    }
+}

@@ -1,0 +1,34 @@
+{
+  "UserAgent": "MobileHub/1.0",
+  "Version": "1.0",
+  "CredentialsProvider": {
+    "CognitoIdentity": {
+      "Default": {
+        "PoolId": "us-east-2:b083423f-dc37-423d-af25-a500978ccaa2",
+        "Region": "us-east-2"
+      }
+    }
+  },
+  "IdentityManager": {
+    "Default": {}
+  },
+  "PinpointAnalytics": {
+    "Default": {
+      "AppId": "fe45afc594d94ecaa0ea10a5bb78851a",
+      "Region": "us-east-1"
+    }
+  },
+  "PinpointTargeting": {
+    "Default": {
+      "Region": "us-east-1"
+    }
+  },
+
+     "S3TransferUtility": {
+        "Default": {
+            "Bucket": "lifehaloios-deployments-mobilehub-641691893",
+            "Region": "us-east-2"
+        }
+    }
+
+}

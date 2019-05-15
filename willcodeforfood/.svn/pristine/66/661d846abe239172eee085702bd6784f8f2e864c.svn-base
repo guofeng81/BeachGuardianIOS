@@ -1,0 +1,27 @@
+//
+//  ChatMessageCell.swift
+//  BeachGuardian
+//
+//  Created by Feng Guo on 3/18/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+import UIKit
+
+class ChatMessageCell: UITableViewCell {
+
+    @IBOutlet var chatCellBackgroudView: UIView!
+    @IBOutlet var authorMessage: UILabel!
+    @IBOutlet var messageLabel: UILabel!
+    
+    
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        chatCellBackgroudView.layer.cornerRadius = 10
+    }
+
+    override func setSelected(_ selected: Bool, animated: Bool) {
+        super.setSelected(selected, animated: animated)
+    }
+    
+}

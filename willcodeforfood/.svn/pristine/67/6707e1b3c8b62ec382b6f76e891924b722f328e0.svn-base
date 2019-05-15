@@ -1,0 +1,209 @@
+import UIKit
+import TwilioChatClient
+protocol TCHManager {
+    var client: TwilioChatClient? { get set }
+    
+    typealias instantiationCompletion = ()-> Void
+    func instantiateClient(with token: String, delegate: TwilioChatClientDelegate, completion: @escaping instantiationCompletion)
+}
+
+protocol ChatClient {
+    
+    static func chatClient(withToken: String, properties: TwilioChatClientProperties?, delegate: TwilioChatClientDelegate?, completion: @escaping TCHTwilioClientCompletion)
+}
+
+extension TwilioChatClient: ChatClient{
+    
+}
+
+class TCHManagerDelegate: TCHManager {
+    var client: TwilioChatClient?
+    var chatClient: ChatClient.Type = TwilioChatClient.self
+
+    func instantiateClient(with token: String, delegate: TwilioChatClientDelegate, completion: @escaping instantiationCompletion) {
+        
+        chatClient.chatClient(withToken: token, properties: nil, delegate: delegate) {
+            (result, chatClient) in
+            self.client = chatClient;
+            completion()
+        }
+        
+    }
+}
+
+class MessageViewController: UIViewController, UITableViewDelegate {
+    
+    struct TwilioVariables{
+         static let TOKEN_URL = "https://crimson-mastiff-6542.twil.io/chat-token"
+         static let IDENTITY = "Feng"
+         static let DEVICE_ID = UIDevice.current.identifierForVendor!.uuidString
+         static let URL_String = "\(TOKEN_URL)?identity=\(IDENTITY)&device=\(DEVICE_ID)"
+    }
+    
+    var manager: TCHManager = TCHManagerDelegate()
+    var generalChannel: TCHChannel? = nil
+    var messages: [TCHMessage] = []
+    
+    var channelName = ""
+    let chanelFriendlyName = "Public Chat Channel"
+    
+    @IBOutlet var tableView: UITableView!
+    @IBOutlet var heightConstraint: NSLayoutConstraint!
+    @IBOutlet var messageTextField: UITextField!
+    @IBOutlet var chatView: UIView!
+    @IBOutlet weak var sendMessage: UIButton!
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        tableView.register(UINib(nibName: "ChatMessageCell", bundle: nil), forCellReuseIdentifier: "chatCell")
+        
+        messageTextField.delegate = self
+        addViewTapGesture()
+        login(with: TokenUtils(session: URLSession(configuration: URLSessionConfiguration.default)))
+    }
+    
+    func login(with utils: TokenUtils) {
+        
+        utils.retriveTokens(url: TwilioVariables.URL_String) { (token, identity, error) in
+            if token != nil {
+                self.manager.instantiateClient(with: token!, delegate: self, completion: {})
+            }
+        }
+    }
+    
+    
+    @IBAction func sendMessagePressed(_ sender: UIButton) {
+        if let messages = self.generalChannel?.messages {
+            let messageOptions = TCHMessageOptions().withBody(messageTextField.text!)
+            messages.sendMessage(with: messageOptions, completion: { (result, message) in
+                self.messageTextField.text = ""
+                self.messageTextField.resignFirstResponder()
+            })
+        }
+    }
+    
+    func joinChannel(channel:TCHChannel?){
+        if let channel = channel {
+            channel.join { (result) in
+                self.generalChannel = channel
+                self.loadMessages(channel: channel)
+            }
+        }
+    }
+    
+    func getChannelList(client:TwilioChatClient)-> TCHChannels?{
+        return client.channelsList()
+    }
+    
+    func createChannel(channelList:TCHChannels){
+        
+        channelList.createChannel(options: [TCHChannelOptionFriendlyName:self.chanelFriendlyName, TCHChannelOptionType: TCHChannelType.public.rawValue], completion: { (result, channel) -> Void in
+            if result.isSuccessful() {
+                channel!.join(completion: { result in
+                    channel!.setUniqueName(self.channelName, completion: { result in })
+                    self.generalChannel = channel
+                })
+            }
+        })
+    }
+    
+    func configureTableView(){
+        tableView.rowHeight = UITableView.automaticDimension
+        tableView.estimatedRowHeight = 120
+        tableView.separatorStyle = .none
+    }
+    
+    func addViewTapGesture(){
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector (viewTapped))
+        chatView.addGestureRecognizer(tapGesture)
+    }
+    
+    @objc func viewTapped(){
+        messageTextField.endEditing(true)
+    }
+
+    func loadMessages(channel:TCHChannel) {
+        if channel.synchronizationStatus == .all {
+            channel.messages?.getLastWithCount(100) { (result, messages) in
+                for message in messages! {
+                    self.messages.append(message)
+                    self.tableView.reloadData()
+                    self.configureTableView()
+                }
+            }
+        }
+    }
+    
+    
+    func scrollToBottomMessage() {
+        if self.messages.count == 0 {
+            return
+        }
+        let bottomMessageIndex = IndexPath(row: messages.count - 1, section: 0)
+        tableView.scrollToRow(at: bottomMessageIndex, at: .bottom, animated: true)
+    }
+}
+
+extension MessageViewController: UITextFieldDelegate {
+    
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        UIView.animate(withDuration: 0.4) {
+            self.heightConstraint.constant = 3
+            self.view.layoutIfNeeded()
+        }
+    }
+    
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        UIView.animate(withDuration: 0.4) {
+            self.heightConstraint.constant = 308
+            self.view.layoutIfNeeded()
+        }
+    }
+}
+
+extension MessageViewController: TwilioChatClientDelegate {
+    func chatClient(_ client: TwilioChatClient, channel: TCHChannel, messageAdded message: TCHMessage) {
+        self.messages.append(message)
+        self.tableView.reloadData()
+    }
+    
+func chatClient(_ client: TwilioChatClient, synchronizationStatusUpdated status: TCHClientSynchronizationStatus) {
+    if status == .completed {
+        client.channelsList()?.channel(withSidOrUniqueName: channelName, completion: {(result, channel) in
+            if channel != nil {
+                self.joinChannel(channel: channel)  }
+            else
+            {
+                self.createChannel(channelList: client.channelsList()!)
+            }
+        })
+        }
+    }
+}
+
+extension MessageViewController : UITableViewDataSource {
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        DispatchQueue.main.async() {
+            if self.messages.count > 0 {
+                self.scrollToBottomMessage()    }
+        }
+        return self.messages.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "chatCell", for: indexPath) as! ChatMessageCell
+        
+        if self.messages[indexPath.row].author == "Feng"{
+             cell.chatCellBackgroudView.backgroundColor = UIColor(red:0.20, green:0.29, blue:0.50, alpha:1.0)
+        }else{
+            cell.chatCellBackgroudView.backgroundColor = UIColor(red:0.50, green:0.50, blue:0.50, alpha:1.0)
+        }
+    
+        cell.messageLabel!.text = self.messages[indexPath.row].body
+        cell.authorMessage!.text = self.messages[indexPath.row].author
+        
+        return cell
+    }
+}
+

@@ -1,0 +1,76 @@
+//
+//  OpenChannelViewControllerTests.swift
+//  BeachGuardianTests
+//
+//  Created by Feng Guo on 3/27/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+import XCTest
+@testable import BeachGuardian
+
+
+class OpenChannelViewControllerTests: XCTestCase {
+    
+    var openChannelsVC: OpenChannelViewController?
+    
+    override func tearDown() {
+        openChannelsVC = nil
+    }
+    
+    func test_tableview_is_not_null(){
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let openChannelsVC = (storyboard.instantiateViewController(withIdentifier: "OpenChannelsView") as! OpenChannelViewController)
+        _ = openChannelsVC.view
+        
+        XCTAssertTrue(openChannelsVC.isViewLoaded)
+    }
+
+    func test_table_view_channels(){
+        
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let openChannelsVC = (storyboard.instantiateViewController(withIdentifier: "OpenChannelsView") as! OpenChannelViewController)
+        _ = openChannelsVC.view
+        
+        XCTAssertEqual(openChannelsVC.openChannelTableView.numberOfRows(inSection: 0), 3)
+    }
+
+    func test_table_view_rows(){
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let openChannelsVC = (storyboard.instantiateViewController(withIdentifier: "OpenChannelsView") as! OpenChannelViewController)
+        _ = openChannelsVC.view
+        
+        XCTAssertEqual(openChannelsVC.channels.count, 3)
+    }
+
+    func test_table_view_sections(){
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let openChannelsVC = (storyboard.instantiateViewController(withIdentifier: "OpenChannelsView") as! OpenChannelViewController)
+        _ = openChannelsVC.view
+        
+        XCTAssertEqual(openChannelsVC.openChannelTableView.numberOfSections,1)
+    }
+
+    func test_table_view_cells(){
+        
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let openChannelsVC = (storyboard.instantiateViewController(withIdentifier: "OpenChannelsView") as! OpenChannelViewController)
+        _ = openChannelsVC.view
+
+        let channelTableView = openChannelsVC.openChannelTableView
+        let datasource = openChannelsVC.openChannelTableView.dataSource
+        
+        let channels = ["Fireman","Police","Lifeguards"]
+        
+        for row in 0..<3 {
+            let openChannelsCell = datasource!.tableView(channelTableView!, cellForRowAt: IndexPath(row: row, section: 0))
+            XCTAssertEqual(openChannelsCell.textLabel!.text,channels[row])
+        }
+    }
+    
+    func test_table_view_title(){
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let openChannelsVC = (storyboard.instantiateViewController(withIdentifier: "OpenChannelsView") as! OpenChannelViewController)
+        _ = openChannelsVC.view
+    }
+}

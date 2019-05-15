@@ -1,0 +1,14 @@
+//
+//  BeachGuardian-Bridging-Header.h
+//  BeachGuardian
+//
+//  Created by Edward Lie on 3/10/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+#ifndef BeachGuardian_Bridging_Header_h
+#define BeachGuardian_Bridging_Header_h
+
+@import MockUIAlertController;
+
+#endif /* BeachGuardian_Bridging_Header_h */

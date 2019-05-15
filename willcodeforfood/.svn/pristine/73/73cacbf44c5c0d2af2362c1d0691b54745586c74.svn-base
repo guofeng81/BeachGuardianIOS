@@ -1,0 +1,78 @@
+//
+//  MissingStatusTableViewController.swift
+//  BeachGuardian
+//
+//  Created by sanaz farhadi on 3/30/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+import UIKit
+
+class MissingStatusTableViewController: UITableViewController {
+
+    @IBOutlet weak var reporterLabel: UILabel!
+    @IBOutlet weak var missingPersonNameLabel: UILabel!
+    @IBOutlet weak var lastSeenLabel1: UILabel!
+    @IBOutlet weak var ageLabel: UILabel!
+    @IBOutlet weak var ethnicityLabel: UILabel!
+    @IBOutlet weak var genderLabel: UILabel!
+    @IBOutlet weak var hairColorLabel: UILabel!
+    @IBOutlet weak var clothingLabel: UILabel!
+    @IBOutlet weak var locationLabel: UILabel!
+    @IBOutlet weak var summaryLabel: UILabel!
+    @IBOutlet weak var missingPersonImage: UIImageView!
+    
+    var missingPersonInfo = [String]()
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        addImage(S3Image: UIImage(named: "kitty")!)
+    }
+
+    override func numberOfSections(in tableView: UITableView) -> Int {
+        return 1
+    }
+
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return 8
+    }
+    
+    func setLabels(value: String, label: UILabel) {
+        label.numberOfLines = 0
+        label.text = value
+        missingPersonInfo.append(value)
+        missingPersonInfo.append(", ")
+        label.sizeToFit()
+    }
+    
+    func setLocationLabel(closestTower: String, directionFromTower: String, locationOnBeach: String, label: UILabel){
+        label.numberOfLines = 0
+        let bigString = directionFromTower + " of tower " + closestTower + " on " + locationOnBeach
+        label.text = bigString
+        missingPersonInfo.append(bigString)
+        missingPersonInfo.append(", ")
+        label.sizeToFit()
+    }
+    
+    func setSummaryLabel(label: UILabel){
+        label.numberOfLines = 0
+        missingPersonInfo.remove(at: 0)
+        missingPersonInfo.remove(at: 0)
+        missingPersonInfo.remove(at: 0)
+        missingPersonInfo.remove(at: 0)
+        missingPersonInfo.remove(at: missingPersonInfo.count-1)
+        missingPersonInfo.insert(" Years Old", at: 1)
+        missingPersonInfo.insert(" Hair", at: 8)
+        missingPersonInfo.insert("Last seen at ", at: 12)
+        var bigString = ""
+        for items in missingPersonInfo{
+            bigString.append(contentsOf: items)
+        }
+        label.text = bigString
+        label.sizeToFit()
+    }
+    
+    func addImage(S3Image: UIImage){
+        missingPersonImage.image = S3Image
+    }
+}

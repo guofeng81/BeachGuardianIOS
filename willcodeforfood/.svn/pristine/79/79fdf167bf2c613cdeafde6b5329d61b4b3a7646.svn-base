@@ -1,0 +1,223 @@
+//
+//  DisturbanceFormTests.swift
+//  BeachGuardianTests
+//
+//  Created by Aaron Mitchell on 3/25/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+import XCTest
+import AWSS3
+@testable import BeachGuardian
+
+class DisturbanceFormTests: XCTestCase {
+    
+    var disturbanceVC: BeachGuardian.disturbanceTableViewController!
+    var picker = UIPickerView()
+    var selfDangerYes = UIButton()
+    var selfDangerNo = UIButton()
+    var othersDangerYes = UIButton()
+    var othersDangerNo = UIButton()
+    var tapGesture = UITapGestureRecognizer()
+    var textBox = UITextView()
+
+    override func setUp() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let vc = storyboard.instantiateViewController(withIdentifier: "disturbanceTableViewController") as! disturbanceTableViewController
+        disturbanceVC = vc as disturbanceTableViewController
+        disturbanceVC.loadViewIfNeeded()
+        
+        picker = disturbanceVC.disturbancePicker
+        selfDangerYes = disturbanceVC.selfDangerYes
+        selfDangerNo = disturbanceVC.selfDangerNo
+        othersDangerYes = disturbanceVC.othersDangerYes
+        othersDangerNo  = disturbanceVC.OthersDangerNo
+        tapGesture = disturbanceVC.viewTapGestureRec
+        textBox = disturbanceVC.textView
+        textBox.text = "test"
+    }
+    
+    func testDisturbanceViewDidLoad() {
+        XCTAssertTrue(disturbanceVC.isViewLoaded)
+    }
+    
+    func testNumberRowsAndSections() {
+        XCTAssertEqual(disturbanceVC.numberOfSections(in: disturbanceVC.mainTable), 1)
+        XCTAssertEqual(disturbanceVC.tableView(disturbanceVC.mainTable, numberOfRowsInSection: 5), 5)
+        XCTAssertEqual(disturbanceVC.pickerView(picker, numberOfRowsInComponent: 1), 6)
+    }
+    
+    func testNumberPickerComponents() {
+        XCTAssertEqual(disturbanceVC.numberOfComponents(in: picker), 1)
+    }
+    
+    func testPickerDisplayValues() {
+        XCTAssertEqual(disturbanceVC.pickerView(picker, titleForRow: 0, forComponent: 0), "Public Disturbance/Disturbio Publico")
+        XCTAssertEqual(disturbanceVC.pickerView(picker, titleForRow: 1, forComponent: 0), "Alcohol")
+        XCTAssertEqual(disturbanceVC.pickerView(picker, titleForRow: 2, forComponent: 0), "Vandalism/Vandalismo")
+        XCTAssertEqual(disturbanceVC.pickerView(picker, titleForRow: 3, forComponent: 0), "Theft/Robo")
+        XCTAssertEqual(disturbanceVC.pickerView(picker, titleForRow: 4, forComponent: 0), "Fighting/Pelea")
+        XCTAssertEqual(disturbanceVC.pickerView(picker, titleForRow: 5, forComponent: 0), "Broken Glass/Vidrio Roto")
+    }
+    
+    func testFormButtons() {
+        disturbanceVC.selfDangerYesSelected(selfDangerYes)
+        XCTAssertTrue(disturbanceVC.yesIam)
+        XCTAssertFalse(disturbanceVC.noIam)
+        
+        disturbanceVC.selfDangerNoSelected(selfDangerNo)
+        XCTAssertTrue(disturbanceVC.noIam)
+        XCTAssertFalse(disturbanceVC.yesIam)
+        
+        disturbanceVC.selfDangerYesSelected(selfDangerYes)
+        XCTAssertTrue(disturbanceVC.yesIam)
+        XCTAssertFalse(disturbanceVC.noIam)
+        
+        disturbanceVC.othersDangerYesSelected(othersDangerYes)
+        XCTAssertTrue(disturbanceVC.yesOthers)
+        XCTAssertFalse(disturbanceVC.noOthers)
+        
+        disturbanceVC.othersDangerNoSelected(othersDangerNo)
+        XCTAssertTrue(disturbanceVC.noOthers)
+        XCTAssertFalse(disturbanceVC.yesOthers)
+        
+        disturbanceVC.othersDangerYesSelected(othersDangerYes)
+        XCTAssertTrue(disturbanceVC.yesOthers)
+        XCTAssertFalse(disturbanceVC.noOthers)
+    }
+    
+    func testPickerStoresValues() {
+        disturbanceVC.pickerView(picker, didSelectRow: 0, inComponent: 1)
+        XCTAssertEqual(disturbanceVC.selectedDisturbance, "Public Disturbance/Disturbio Publico")
+
+    }
+    func testTextBoxValues() {
+        disturbanceVC.textViewDidEndEditing(textBox)
+        XCTAssertEqual(textBox.text!, disturbanceVC.additionalInfo)
+    }
+    
+    func testTapRecognizer() {
+        XCTAssertNotNil(disturbanceVC.tap(recognizer: tapGesture))
+        
+        disturbanceVC.textViewDidBeginEditing(textBox)
+        XCTAssertEqual(textBox.textColor, .black)
+        XCTAssertTrue(disturbanceVC.textView(textBox, shouldChangeTextIn: NSMakeRange(0,200), replacementText: (textBox.text)!))
+    }
+    
+    func testProcessDisturbanceRequestSuccess(){
+        disturbanceVC.s3Url = (URL(string: "https://s3.console.aws.amazon.com/s3/object/"))
+        let imageToTest = UIImage(named: "camera2")
+        let fileName = "missing.png"
+        let fileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
+        let key = ProcessInfo.processInfo.globallyUniqueString + ".png"
+        let imageData = imageToTest?.jpegData(compressionQuality: 1.0)
+        do
+        {
+            try imageData!.write(to: fileURL, options: [.atomic])
+        }
+        catch{}
+        let transferUtility = AWSS3TransferUtility.default()
+        _ = disturbanceVC.processRequest(transferUtility: transferUtility, key: key, fileURL: fileURL){task in
+            XCTAssertEqual(self.disturbanceVC.s3Error, false)
+        }
+    }
+    
+    func testProcessDisturbanceRequestFailure(){
+        self.disturbanceVC.s3Url = (URL(string: "https://s3.console.aws.amazon.com/s3/object/"))
+        let imageToTest = UIImage(named: "camera2")
+        let fileName = "missing.png"
+        let fileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
+        let key = ProcessInfo.processInfo.globallyUniqueString + ".png"
+        let imageData = imageToTest?.jpegData(compressionQuality: 1.0)
+        do
+        {
+            try imageData!.write(to: fileURL, options: [.atomic])
+        }
+        catch{}
+        let transferUtility = AWSS3TransferUtility.default()
+        _ = self.disturbanceVC.processRequest(transferUtility: transferUtility, key: key, fileURL: URL(string: "failure")!){task in
+        }
+        XCTAssertEqual(self.disturbanceVC.s3Error, true)
+    }
+    
+    func testEmptyDictionaryImagePickerController(){
+        let imagePickerController = UIImagePickerController()
+        let emptyDictionary = [UIImagePickerController.InfoKey: Any]()
+        disturbanceVC.imagePickerController(imagePickerController, didFinishPickingMediaWithInfo: emptyDictionary)
+        XCTAssertNil(disturbanceVC.disturbanceImage.image)
+    }
+    
+    func testImagePickerController(){
+        var nonEmptyDictionary = [UIImagePickerController.InfoKey: Any]()
+        nonEmptyDictionary[UIImagePickerController.InfoKey.originalImage] = UIImage(named: "camera2")
+        let imagePickerController = UIImagePickerController()
+        disturbanceVC.imagePickerController(imagePickerController, didFinishPickingMediaWithInfo: nonEmptyDictionary)
+        XCTAssertNotNil(disturbanceVC.disturbanceImage.image)
+    }
+    
+    func testUploadPhoto(){
+        let uiImageViewMock = UIImageViewMock()
+        uiImageViewMock._image = UIImage(named: "camera2")
+        disturbanceVC.disturbanceImage = uiImageViewMock
+        XCTAssertNotNil(disturbanceVC.submitReportUsingPhoto(disturbanceImage:
+        disturbanceVC.disturbanceImage))
+    }
+    
+    func testSubmitAWSPictureWithNoPicture() {
+        let alertVerifier = QCOMockAlertVerifier()
+        disturbanceVC.disturbanceImage = nil
+        disturbanceVC.submitReport([])
+        XCTAssertEqual(alertVerifier.title, "No picture chosen")
+    }
+    
+    func testDisplaySubmittedMessage()
+    {
+        let alertVerifier = QCOMockAlertVerifier()
+        disturbanceVC.displaySubmittedMessage()
+        XCTAssertEqual(alertVerifier.title, "Report Submitted")
+    }
+    
+    func test_DismissIndicator_ShowsMessage()
+    {
+        let alertVerifier = QCOMockAlertVerifier()
+        disturbanceVC.dismissAlert()
+        XCTAssertEqual(alertVerifier.title, "Report Submitted")
+    }
+    
+    func test_DisplayNoSubmittedMessage()
+    {
+        let alertVerifier = QCOMockAlertVerifier()
+        disturbanceVC.displayNoPictureMessage()
+        XCTAssertEqual(alertVerifier.title, "No picture chosen")
+    }
+    
+    func testUploadPhotoIBAction(){
+        XCTAssertNoThrow(disturbanceVC.choosePhoto((Any).self))
+    }
+    
+    func testTakePhotoIBAction(){
+        XCTAssertNoThrow(disturbanceVC.takePhoto((Any).self))
+    }
+    
+    func testSubmitPhoto_GetReportSubmitted(){
+        var imageToTest : UIImageView?
+        let image: UIImage = UIImage(named: "camera2")!
+        imageToTest = UIImageView(image: image)
+        disturbanceVC.disturbanceImage.image = image
+        disturbanceVC.submitReportUsingPhoto(disturbanceImage: imageToTest )
+        XCTAssertEqual(disturbanceVC.s3Error, false)
+    }
+    
+    func test_OpenPhotoActionPicker_HardwareAvailable()
+    {
+        class MockUIImagePicker : UIImagePickerController
+        {
+            override class func isSourceTypeAvailable(_ sourceType: UIImagePickerController.SourceType) -> Bool {
+                return true
+            }
+        }
+        
+        disturbanceVC.openCamera(serviceProvider: MockUIImagePicker.self)
+        XCTAssertEqual(disturbanceVC.imagePicker.sourceType, UIImagePickerController.SourceType(rawValue: 1)!)
+    }
+}

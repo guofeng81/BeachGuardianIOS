@@ -1,0 +1,65 @@
+//
+//  MissingStatusReportTests.swift
+//  BeachGuardianTests
+//
+//  Created by sanaz farhadi on 3/31/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+import UIKit
+import XCTest
+@testable import BeachGuardian
+
+class MissingStatusReportTests: XCTestCase {
+    var missingReportVC: BeachGuardian.MissingStatusTableViewController!
+    var reporterName = UILabel()
+    var location = UILabel()
+    var image = UIImageView()
+    var summaryView = UILabel()
+    var testArray = ["test reporter", ", ", "test person",", ", "12/12/2019",", ","5", ", ", "Black",", ", "Female", ", ", "Brown", ", ", "Blue dress", ", ", "North of Tower 1 on shore", ", "]
+    override func setUp() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let vc = storyboard.instantiateViewController(withIdentifier: "MissingPersonReport") as! MissingStatusTableViewController
+        missingReportVC = vc as MissingStatusTableViewController
+        missingReportVC.loadViewIfNeeded()
+        
+        reporterName = missingReportVC.reporterLabel
+        location = missingReportVC.locationLabel
+        summaryView = missingReportVC.summaryLabel
+        missingReportVC.missingPersonInfo = testArray
+        image.image = missingReportVC.missingPersonImage.image
+    }
+    
+    func testMissingReportViewDidLoad() {
+        XCTAssertTrue(missingReportVC.isViewLoaded)
+    }
+    
+    func testTheTableView() {
+        XCTAssertEqual(missingReportVC.numberOfSections(in: missingReportVC.tableView), 1)
+        XCTAssertEqual(missingReportVC.tableView(missingReportVC.tableView, numberOfRowsInSection: 8), 8)
+    }
+
+    func testSetLabels(){
+        missingReportVC.setLabels(value: "testReporter", label: reporterName)
+        XCTAssertEqual(reporterName.text, missingReportVC.reporterLabel.text)
+    }
+    
+    func testLocationLabel(){
+        missingReportVC.setLocationLabel(closestTower: "3", directionFromTower: "East", locationOnBeach: "Water", label: location)
+        XCTAssertEqual(location.text, missingReportVC.locationLabel.text)
+        XCTAssertEqual(location.text,"East of tower 3 on Water")
+    }
+    
+    func testSummaryLabel(){
+       missingReportVC.setSummaryLabel(label: summaryView)
+        XCTAssertEqual(summaryView.text, missingReportVC.summaryLabel.text)
+        XCTAssertEqual(missingReportVC.missingPersonInfo[12], "Last seen at ")
+        XCTAssertEqual(missingReportVC.missingPersonInfo[1], " Years Old")
+        XCTAssertEqual(missingReportVC.missingPersonInfo[8], " Hair")
+    }
+    
+    func testImageView(){
+        missingReportVC.addImage(S3Image: UIImage(named: "kitty")!)
+        XCTAssertEqual(image.image, missingReportVC.missingPersonImage.image)
+    }
+}

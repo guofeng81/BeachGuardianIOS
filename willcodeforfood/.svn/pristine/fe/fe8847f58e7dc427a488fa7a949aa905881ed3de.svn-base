@@ -1,0 +1,145 @@
+//
+//  S3Tests.swift
+//  BeachGuardianTests
+//
+//  Created by Edward Lie on 3/17/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+import XCTest
+import AWSS3
+@testable import BeachGuardian
+
+class UIImageViewMock: UIImageView
+{
+    var _image: UIImage?
+    var imageSetterWasCalled = false
+
+    override var image: UIImage? {
+        get {
+            return self._image
+        }
+        set {
+            self._image = newValue
+            imageSetterWasCalled = true
+        }
+    }
+}
+
+class S3Tests: XCTestCase {
+
+    var controllerUnderTest : BeachGuardian.MissingPersonTableViewController!
+    var _image : UIImage?
+    
+    override func setUp() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let viewController = storyboard.instantiateViewController(withIdentifier: "MissingPersonTableViewController")
+        controllerUnderTest = (viewController as! BeachGuardian.MissingPersonTableViewController)
+        controllerUnderTest.loadViewIfNeeded()
+    }
+    
+    func testSubmitAWSPictureWithNoPicture() {
+        let alertVerifier = QCOMockAlertVerifier()
+        controllerUnderTest.missingPersonImage = nil
+        controllerUnderTest.submitReport([])
+        XCTAssertEqual(alertVerifier.title, "No picture chosen")
+    }
+  
+    func testDisplaySubmittedMessage()
+    {
+        let alertVerifier = QCOMockAlertVerifier()
+        controllerUnderTest.displaySubmittedMessage()
+        XCTAssertEqual(alertVerifier.title, "Report Submitted")
+    }
+
+    func testUploadPhoto(){
+        let uiImageViewMock = UIImageViewMock()
+        uiImageViewMock._image = UIImage(named: "camera2")
+        controllerUnderTest.missingPersonImage = uiImageViewMock
+        XCTAssertNotNil(controllerUnderTest.submitReportUsingPhoto(missingPersonImage: controllerUnderTest.missingPersonImage))
+    }
+    
+    func testProcessRequestSuccess(){
+        self.controllerUnderTest.s3Url = (URL(string: "https://s3.console.aws.amazon.com/s3/object/"))
+        let imageToTest = UIImage(named: "camera2")
+        let fileName = "missing.png"
+        let fileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
+        let key = ProcessInfo.processInfo.globallyUniqueString + ".png"
+        let imageData = imageToTest?.jpegData(compressionQuality: 1.0)
+        do
+        {
+            try imageData!.write(to: fileURL, options: [.atomic])
+        }
+        catch{
+        }
+        let transferUtility = AWSS3TransferUtility.default()
+
+        _ = self.controllerUnderTest.processRequest(transferUtility: transferUtility, key: key, fileURL: fileURL){task in
+        }
+            XCTAssertEqual(controllerUnderTest.s3Error, false)
+    }
+    
+    func testProcessRequestFailure(){
+        self.controllerUnderTest.s3Url = (URL(string: "https://s3.console.aws.amazon.com/s3/object/"))
+        let imageToTest = UIImage(named: "camera2")
+        let fileName = "missing.png"
+        let fileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
+        let key = ProcessInfo.processInfo.globallyUniqueString + ".png"
+        let imageData = imageToTest?.jpegData(compressionQuality: 1.0)
+        do
+        {
+            try imageData!.write(to: fileURL, options: [.atomic])
+        }
+        catch{}
+
+        let transferUtility = AWSS3TransferUtility.default()
+
+        _ = self.controllerUnderTest.processRequest(transferUtility: transferUtility, key: key, fileURL: URL(string: "failure")!){task in
+    }
+    XCTAssertEqual(controllerUnderTest.s3Error, true)
+    }
+    
+    
+    func testEmptyDictionaryImagePickerController(){
+        let imagePickerController = UIImagePickerController()
+        let emptyDictionary = [UIImagePickerController.InfoKey: Any]()
+        controllerUnderTest.imagePickerController(imagePickerController, didFinishPickingMediaWithInfo: emptyDictionary)
+        XCTAssertNil(controllerUnderTest.missingPersonImage.image)
+    }
+    
+    func testImagePickerController(){
+        var nonEmptyDictionary = [UIImagePickerController.InfoKey: Any]()
+        nonEmptyDictionary[UIImagePickerController.InfoKey.originalImage] = UIImage(named: "camera2")
+        let imagePickerController = UIImagePickerController()
+        self.controllerUnderTest.imagePickerController(imagePickerController, didFinishPickingMediaWithInfo: nonEmptyDictionary)
+        XCTAssertNotNil(controllerUnderTest.missingPersonImage.image)
+    }
+    
+    func testUploadPhotoIBAction(){
+        XCTAssertNoThrow(self.controllerUnderTest.uploadPhoto((Any).self))
+    }
+    
+    func testTakePhotoIBAction(){
+        XCTAssertNoThrow(self.controllerUnderTest.takePhoto((Any).self))
+    }
+    
+    func test_DismissIndicator_ShowsMessage()
+    {
+        let alertVerifier = QCOMockAlertVerifier()
+        self.controllerUnderTest.dismissAlert()
+        XCTAssertEqual(alertVerifier.title, "Report Submitted")
+    }
+    
+    func test_OpenPhotoActionPicker_HardwareAvailable()
+    {
+        class MockUIImagePicker : UIImagePickerController
+        {
+            override class func isSourceTypeAvailable(_ sourceType: UIImagePickerController.SourceType) -> Bool {
+                return true
+            }
+        }
+        
+        self.controllerUnderTest.openCamera(serviceProvider: MockUIImagePicker.self)
+        XCTAssertEqual(self.controllerUnderTest.imagePicker.sourceType, UIImagePickerController.SourceType(rawValue: 1)!)
+    }
+}

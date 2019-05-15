@@ -1,0 +1,17 @@
+//
+//  SplashViewController.swift
+//  BeachGuardian
+//
+//  Created by Aaron Mitchell on 2/22/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+import UIKit
+
+class SplashViewController: UIViewController {
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+    }
+
+}

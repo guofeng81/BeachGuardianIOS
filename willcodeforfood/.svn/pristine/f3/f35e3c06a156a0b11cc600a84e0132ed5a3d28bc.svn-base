@@ -1,0 +1,26 @@
+//
+//  OpenChannelTableViewCell.swift
+//  BeachGuardian
+//
+//  Created by Feng Guo on 3/13/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+import UIKit
+
+class OpenChannelTableViewCell: UITableViewCell {
+
+
+    @IBOutlet var channelImage: UIImageView!
+    @IBOutlet var channelName: UILabel!
+    
+    override func awakeFromNib() {
+        super.awakeFromNib()
+    }
+
+    override func setSelected(_ selected: Bool, animated: Bool) {
+        super.setSelected(selected, animated: animated)
+
+    }
+
+}

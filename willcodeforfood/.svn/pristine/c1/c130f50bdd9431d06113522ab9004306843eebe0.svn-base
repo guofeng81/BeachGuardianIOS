@@ -1,0 +1,105 @@
+//
+//  MainTabBarTests.swift
+//  BeachGuardian
+//
+//  Created by Edward Lie on 3/10/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+import XCTest
+@testable import BeachGuardian
+
+//class MockImagePicker : CameraProtocol{
+//    var openPhotoActionPickerCalled = false
+//    func openPhotoActionPicker() {
+//        openPhotoActionPickerCalled = true
+//    }
+//}
+
+class MainTabBarTests: XCTestCase {
+
+    public var sut : MainTabBar!
+    override func setUp() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let viewController = storyboard.instantiateViewController(withIdentifier: "DashboardViewController")
+        let controllerUnderTest = viewController as! BeachGuardian.DashboardViewController
+        controllerUnderTest.loadViewIfNeeded()
+        sut = MainTabBar()
+    }
+
+    override func tearDown() {
+        sut = nil
+    }
+
+    func test_LoadingMiddleButton_MiddleButtonExists() {
+        sut.setupMiddleButton()
+        XCTAssertNotNil(sut.middleButton)
+    }
+
+    func testHitTest(){
+        let testPoint = CGPoint(x: 1, y:2)
+        _ = sut.hitTest(testPoint, with: nil)
+        XCTAssertNotNil(sut.middleButton)
+    }
+    
+    func testHitTestHiddenSelf(){
+        sut.isHidden = true
+        let returnVal = sut.hitTest(CGPoint(x: 1, y:2), with: nil)
+        XCTAssertNil(returnVal)
+    }
+    
+//    func testCameraLoaded(){
+//        let isCameraAvailable = UIImagePickerController.isSourceTypeAvailable(.camera)
+//        sut.openPhotoActionPicker()
+//        XCTAssertNotNil(isCameraAvailable)
+//    }
+    
+    func test_PhotoAlertAction_ShouldPresentAlert(){
+        sut.middleButton.sendActions(for: .touchUpInside)
+        let alertVerifier = QCOMockAlertVerifier()
+        sut.openPhotoActionPicker()
+        XCTAssertEqual(alertVerifier.presentedCount, 1)
+    }
+    
+    func testDelegateIsCalled(){
+        let imagePickerController = UIImagePickerController()
+        let emptyDictionary = [UIImagePickerController.InfoKey: Any]()
+        sut.imagePickerController(imagePickerController, didFinishPickingMediaWithInfo: emptyDictionary)
+        XCTAssertTrue(sut.boolMarker)
+    }
+    
+    func test_ImagePickedGoesToMissingPersonTableViewController(){
+        var emptyDictionary = [UIImagePickerController.InfoKey: Any]()
+        emptyDictionary[UIImagePickerController.InfoKey.originalImage] = UIImage(named: "camera2")
+        let imagePickerController = UIImagePickerController()
+        sut.imagePickerController(imagePickerController, didFinishPickingMediaWithInfo: emptyDictionary)
+        XCTAssertFalse(sut.boolMarker)
+    }
+    
+    func testOpenPhotoActionPickerCameraNotAvailableAndCameraRollAvailable(){
+        sut.middleButton.sendActions(for: .touchUpInside)
+        let alertVerifier = QCOMockAlertVerifier()
+        sut.openPhotoActionPicker()
+        XCTAssertNoThrow(alertVerifier.executeActionForButton(withTitle: "Camera"))
+        XCTAssertNoThrow(alertVerifier.executeActionForButton(withTitle: "Camera Roll"))
+    }
+
+    func testGoBack(){
+        XCTAssertNoThrow(sut.goBack())
+    }
+    
+    func test_OpenPhotoActionPicker_HardwareAvailable()
+    {
+        class MockUIImagePicker : UIImagePickerController
+        {
+            override class func isSourceTypeAvailable(_ sourceType: UIImagePickerController.SourceType) -> Bool {
+                return true
+            }
+        }
+        
+        let alertVerifier = QCOMockAlertVerifier()
+        sut.openCamera(serviceProvider: MockUIImagePicker.self)
+        alertVerifier.executeActionForButton(withTitle: "Camera")
+        XCTAssertEqual(sut.imagePicker.sourceType, UIImagePickerController.SourceType(rawValue: 1)!)
+    }
+}

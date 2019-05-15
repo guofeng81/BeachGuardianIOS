@@ -1,0 +1,249 @@
+//
+//  OceanHazardTableViewController.swift
+//  BeachGuardian
+//
+//  Created by sanaz farhadi on 3/10/19.
+//  Copyright © 2019 Sebastian Macedonio. All rights reserved.
+//
+
+import UIKit
+import AWSS3
+
+class OceanHazardTableViewController: UITableViewController,UIPickerViewDelegate, UIPickerViewDataSource, UITextViewDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+    
+    var contentURL: URL!
+    var s3Url: URL!
+    var bucketName = "lifehaloios-deployments-mobilehub-641691893"
+    var s3Error = false
+    public var imagePicker : UIImagePickerController! = nil
+    
+    @IBOutlet var MainTable: UITableView!
+    
+    @IBOutlet weak var hazardPicker: UIPickerView!
+    @IBOutlet weak var CellTwoYES: UIButton!
+    @IBOutlet weak var CellTwoNO: UIButton!
+    @IBOutlet weak var CellThreeYES: UIButton!
+    @IBOutlet weak var CellThreeNO: UIButton!
+    @IBOutlet weak var TakeAPhoto: UIButton!
+    @IBOutlet weak var UploadAPhoto: UIButton!
+    @IBOutlet weak var Submit: UIButton!
+    
+    @IBOutlet weak var textView: UITextView!
+    
+    @IBOutlet weak var oceanHazardImage: UIImageView!
+
+    let viewTapGestureRec = UITapGestureRecognizer(target: self, action: #selector(tap(recognizer:)))
+    
+    let hazards = ["Oil Spill/Derrame petróleo","Chemical Spill/Derrame químicas","Debris/Escombros", "Tree/Árbol"]
+    
+    var selectedHazard = ""
+    var RUInDanger = false
+    var othersInDanger = false
+    var additionalInfo = ""
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        hazardPicker.delegate = self
+        hazardPicker.dataSource = self
+        hazardPicker.tag = 1
+        hazardPicker.accessibilityIdentifier = "picker-hazard"
+       
+        textView.delegate = self
+        textView.layer.cornerRadius = 10
+        textView.text = "200 Character Limit"
+        textView.textColor = UIColor.lightGray
+        
+        viewTapGestureRec.cancelsTouchesInView = false
+        self.view.addGestureRecognizer(viewTapGestureRec)
+        
+    }
+    
+    @objc func tap(recognizer: UIGestureRecognizer) {
+       textView.resignFirstResponder()
+    }
+    
+    override func numberOfSections(in tableView: UITableView) -> Int {
+        return 1
+    }
+    
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return 5
+    }
+    
+    func numberOfComponents(in pickerView: UIPickerView) -> Int {
+        return 1
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
+        return hazards.count
+    }
+
+    
+    func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+        return pickerViewSelect(tag: pickerView.tag, row: row)
+    }
+    
+    func pickerViewSelect (tag: Int, row: Int){
+        selectedHazard = hazards[row]
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
+        return hazards[row]
+    }
+    
+    @IBAction func IAmInDanger(_ sender: UIButton) {
+        
+        RUInDanger = true
+        sender.isSelected = !sender.isSelected
+        
+        if CellTwoNO.isSelected{
+            CellTwoNO.isSelected = !CellTwoNO.isSelected
+        }
+        
+    }
+    
+    @IBAction func IAmNotInDanger(_ sender: UIButton) {
+        
+        RUInDanger = false
+        sender.isSelected = !sender.isSelected
+        
+        if CellTwoYES.isSelected{
+            CellTwoYES.isSelected = !CellTwoYES.isSelected
+        }
+    }
+    
+    @IBAction func OthersAreInDanger(_ sender: UIButton) {
+        
+        othersInDanger = true
+        sender.isSelected = !sender.isSelected
+        
+        if CellThreeNO.isSelected{
+            CellThreeNO.isSelected = !CellThreeNO.isSelected
+        }
+    }
+    
+    @IBAction func OthersAreNotInDanger(_ sender: UIButton) {
+        
+        othersInDanger = false
+        sender.isSelected = !sender.isSelected
+        
+        if CellThreeYES.isSelected{
+            CellThreeYES.isSelected = !CellThreeYES.isSelected
+        }
+    }
+    
+    func textViewDidBeginEditing(_ textView: UITextView) {
+        textView.becomeFirstResponder()
+        if textView.textColor == UIColor.lightGray {
+            textView.text = nil
+            textView.becomeFirstResponder()
+            textView.textColor = UIColor.black
+        }
+    }
+    
+    func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+        return textView.text.count + (text.count - range.length) <= 200
+    }
+
+    func textViewDidEndEditing(_ textView: UITextView) {
+            additionalInfo = textView.text
+    }
+  
+    @IBAction func takePhoto(_ sender: Any) {
+        openCamera()
+    }
+    
+    func openCamera(serviceProvider: UIImagePickerController.Type = UIImagePickerController.self)
+    {
+        imagePicker = serviceProvider.init()
+        imagePicker.delegate = self
+        if serviceProvider.isSourceTypeAvailable(.camera){
+            self.imagePicker.sourceType = .camera
+            self.present(imagePicker, animated: true, completion: nil)
+        }
+    }
+    
+    @IBAction func uploadPhoto(_ sender: Any) {
+        let imagePickerController = UIImagePickerController()
+        imagePickerController.delegate = self as UIImagePickerControllerDelegate & UINavigationControllerDelegate
+        imagePickerController.sourceType = .photoLibrary
+        self.present(imagePickerController, animated: true, completion: nil)
+    }
+    
+    @objc func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]){
+        guard let selectedImage = info[UIImagePickerController.InfoKey.originalImage] as? UIImage
+            else{
+                return
+        }
+        oceanHazardImage.image = selectedImage
+        picker.dismiss(animated: true, completion: nil)
+    }
+    
+    @IBAction func submitReport(_ sender: Any) {
+        let alert = UIAlertController(title: nil, message: "Please wait...", preferredStyle: .alert)
+        
+        let loadingIndicator = UIActivityIndicatorView(frame: CGRect(x: 10, y: 5, width: 50, height: 50))
+        loadingIndicator.hidesWhenStopped = true
+        loadingIndicator.style = UIActivityIndicatorView.Style.gray
+        loadingIndicator.startAnimating();
+        alert.view.addSubview(loadingIndicator)
+        submitReportUsingPhoto(oceanHazardImage : oceanHazardImage)
+    }
+    
+    func submitReportUsingPhoto(oceanHazardImage : UIImageView? ){
+        s3Url = AWSS3.default().configuration.endpoint.url
+        guard (oceanHazardImage?.image) != nil else {
+            displayNoPictureMessage()
+            return
+        }
+        
+        let fileName = "oceanHazard.png"
+        let fileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
+        let key = ProcessInfo.processInfo.globallyUniqueString + ".png"
+        let imageData = oceanHazardImage!.image?.jpegData(compressionQuality: 1.0)
+        do
+        {
+            try imageData!.write(to: fileURL, options: [.atomic])
+        }
+        catch{}
+        let transferUtility = AWSS3TransferUtility.default()
+        processRequest(transferUtility : transferUtility, key: key, fileURL: fileURL){ success in }
+    }
+    
+    func processRequest(transferUtility : AWSS3TransferUtility, key: String, fileURL: URL, completion: @escaping(Bool) ->()){
+        transferUtility.uploadFile(fileURL, bucket: S3Configuration.BUCKET_NAME.rawValue, key: key, contentType: "image/png", expression: nil, completionHandler: nil).continueWith {
+            (task) -> AnyObject? in
+            if task.error != nil{
+                self.s3Error = true
+                completion(true)
+                return nil
+            }
+            
+            if let _ = task.result {
+            }
+            self.displaySubmittedMessage()
+            self.s3Error = false
+            return nil
+        }
+    }
+    
+    internal func dismissAlert() { if let vc = self.presentedViewController, vc is UIAlertController { dismiss(animated: false, completion: nil) }
+        displaySubmittedMessage()
+    }
+    
+    func displaySubmittedMessage()
+    {
+        let alertController = UIAlertController(title: "Report Submitted", message: "Your report has been submitted", preferredStyle: .alert)
+        let OKAction = UIAlertAction(title: "OK", style: .default) {(action: UIAlertAction!) in}
+        alertController.addAction(OKAction)
+        self.present(alertController, animated: true, completion: nil)
+    }
+    
+    func displayNoPictureMessage()
+    {
+        let alertController = UIAlertController(title: "No picture chosen", message: "You have not uploaded a picture to be submitted", preferredStyle: .alert)
+        let OKAction = UIAlertAction(title: "OK", style: .default) {(action: UIAlertAction!) in}
+        alertController.addAction(OKAction)
+        self.present(alertController, animated: true, completion: nil)
+    }
+}
